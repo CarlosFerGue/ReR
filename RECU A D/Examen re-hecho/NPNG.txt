@@ -1,85 +1,161 @@
---Creanmos la tabla socio
-CREATE TABLE socio (
-    id_socio CHAR(3) PRIMARY KEY,
-    nombre VARCHAR(15),
-    apellidos VARCHAR(30)
-);
-SELECT * FROM socio;
+--Errores
+show errors para enseñar errores
 
+--Creamos tablas
+CREATE TABLE obra (
+id CHAR(5),
+titulo VARCHAR(100),
+anyo INTEGER,
+CONSTRAINT PK_obra PRIMARY KEY (id),
+CONSTRAINT NN_titulo CHECK (titulo IS NOT NULL)
+);
+
+CREATE TABLE autor (
+id CHAR(4),
+nombre VARCHAR(30),
+apellidos VARCHAR(60),
+nacimiento DATE,
+CONSTRAINT PK_autor PRIMARY KEY (id),
+CONSTRAINT NN_nombre CHECK (nombre IS NOT NULL),
+CONSTRAINT NN_apellidos CHECK (apellidos IS NOT NULL)
+);
+
+CREATE TABLE autor_obra (
+id_autor CHAR(4),
+id_obra CHAR(5),
+CONSTRAINT PK_autor_obra PRIMARY KEY (id_autor, id_obra),
+CONSTRAINT FK_autor_obra_id_autor FOREIGN KEY (id_autor) REFERENCES
+autor(id),
+CONSTRAINT FK_autor_obra_id_obra FOREIGN KEY (id_obra)
+REFERENCES obra(id)
+);
+
+CREATE TABLE edicion (
+id CHAR(6),
+id_obra CHAR(5),
+isbn VARCHAR(20),
+anyo INTEGER,
+CONSTRAINT PK_edicion PRIMARY KEY (id),
+CONSTRAINT NN_id_obra CHECK (id_obra IS NOT NULL),
+CONSTRAINT NN_isbn CHECK (isbn IS NOT NULL),
+CONSTRAINT FK_edicion FOREIGN KEY (id_obra) REFERENCES
+obra(id)
+);
+
+CREATE TABLE ejemplar (
+id_edicion CHAR(6),
+numero INTEGER,
+alta DATE,
+baja DATE,
+CONSTRAINT PK_ejemplar PRIMARY KEY (id_edicion, numero),
+CONSTRAINT FK_ejemplar FOREIGN KEY (id_edicion) REFERENCES
+edicion(id),
+CONSTRAINT NN_alta CHECK (alta IS NOT NULL)
+);
+
+INSERT INTO autor (id, nombre, apellidos, nacimiento) VALUES ('A001', 'Gabriel', 'García Márquez', TO_DATE('1927-03-06', 'YYYY-MM-DD'));
+INSERT INTO autor (id, nombre, apellidos, nacimiento) VALUES ('A002', 'J.K.', 'Rowling', TO_DATE('1965-07-31', 'YYYY-MM-DD'));
+INSERT INTO autor (id, nombre, apellidos, nacimiento) VALUES ('A003', 'Fyodor', 'Dostoevsky', TO_DATE('1821-11-11', 'YYYY-MM-DD'));
+INSERT INTO autor (id, nombre, apellidos, nacimiento) VALUES ('A004', 'Jane', 'Austen', TO_DATE('1775-12-16', 'YYYY-MM-DD'));
+INSERT INTO autor (id, nombre, apellidos, nacimiento) VALUES ('A005', 'Mark', 'Twain', TO_DATE('1835-11-30', 'YYYY-MM-DD'));
+INSERT INTO autor (id, nombre, apellidos, nacimiento) VALUES ('A006', 'Leo', 'Tolstoy', TO_DATE('1828-09-09', 'YYYY-MM-DD'));
+
+
+INSERT INTO obra (id, titulo, anyo) VALUES ('O001', 'Cien años de soledad', 1967);
+INSERT INTO obra (id, titulo, anyo) VALUES ('O002', 'Harry Potter y la piedra filosofal', 1997);
+INSERT INTO obra (id, titulo, anyo) VALUES ('O003', 'Crimen y castigo', 1866);
+INSERT INTO obra (id, titulo, anyo) VALUES ('O004', 'Orgullo y prejuicio', 1813);
+INSERT INTO obra (id, titulo, anyo) VALUES ('O005', 'Las aventuras de Tom Sawyer', 1876);
+INSERT INTO obra (id, titulo, anyo) VALUES ('O006', 'Guerra y paz', 1869);
+
+
+INSERT INTO autor_obra (id_autor, id_obra) VALUES ('A001', 'O001');
+INSERT INTO autor_obra (id_autor, id_obra) VALUES ('A002', 'O002');
+INSERT INTO autor_obra (id_autor, id_obra) VALUES ('A003', 'O003');
+INSERT INTO autor_obra (id_autor, id_obra) VALUES ('A004', 'O004');
+INSERT INTO autor_obra (id_autor, id_obra) VALUES ('A005', 'O005');
+INSERT INTO autor_obra (id_autor, id_obra) VALUES ('A006', 'O006');
+-- Repetir un autor con una obra diferente
+INSERT INTO autor_obra (id_autor, id_obra) VALUES ('A001', 'O006');
+-- Repetir un autor con otra obra diferente
+INSERT INTO autor_obra (id_autor, id_obra) VALUES ('A002', 'O003');
+
+
+INSERT INTO edicion (id, id_obra, isbn, anyo) VALUES ('E001', 'O001', '978-3-16-148410-0', 1967);
+INSERT INTO edicion (id, id_obra, isbn, anyo) VALUES ('E002', 'O002', '978-1-26-148410-0', 1997);
+INSERT INTO edicion (id, id_obra, isbn, anyo) VALUES ('E003', 'O003', '978-2-16-148410-0', 1866);
+INSERT INTO edicion (id, id_obra, isbn, anyo) VALUES ('E004', 'O004', '978-4-16-148410-0', 1813);
+INSERT INTO edicion (id, id_obra, isbn, anyo) VALUES ('E005', 'O005', '978-5-16-148410-0', 1876);
+INSERT INTO edicion (id, id_obra, isbn, anyo) VALUES ('E006', 'O006', '978-6-16-148410-0', 1869);
+
+
+INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E001', 1, TO_DATE('2000-01-01', 'YYYY-MM-DD'));
+INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E002', 1, TO_DATE('2000-01-02', 'YYYY-MM-DD'));
+INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E003', 1, TO_DATE('2000-01-03', 'YYYY-MM-DD'));
+INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E004', 1, TO_DATE('2000-01-04', 'YYYY-MM-DD'));
+INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E005', 1, TO_DATE('2000-01-05', 'YYYY-MM-DD'));
+INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E006', 1, TO_DATE('2000-01-06', 'YYYY-MM-DD'));
+-- Agregando más ejemplares de una misma edición
+INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E001', 2, TO_DATE('2001-02-01', 'YYYY-MM-DD'));
+INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E002', 2, TO_DATE('2001-02-02', 'YYYY-MM-DD'));
+
+
+
+
+
+
+
+--Tablas del examen
+
+-- tabla socio
+CREATE TABLE socio(
+    ID_SOCIO CHAR(5),
+    NOMBRE VARCHAR(30),
+    APELLIDOS VARCHAR(100),
+    CONSTRAINT PK_IS_SOCIO PRIMARY KEY(ID_SOCIO)
+);
+
+
+-- tabla prestamo
 CREATE TABLE prestamo(
-    id_prestamo CHAR(3) PRIMARY KEY,
-    id_socio CHAR(3),
-    id_edicion CHAR(6),
-    numero INTEGER,
-    f_apertura DATE,
-	f_cierre DATE,
-    CONSTRAINT FK_prestamo_socio FOREIGN KEY (id_socio) REFERENCES socio(id_socio),
-    CONSTRAINT FK_prestamo_edicion FOREIGN KEY (id_edicion) REFERENCES edicion(id)
+    ID_PRESTAMO CHAR(5),
+    ID_SOCIO CHAR(5),
+    ID_EDICION CHAR(6),
+    NUMERO INTEGER,
+    INICIO DATE,
+    FIN DATE,
+    CONSTRAINT PK_ID_PRESTAMO PRIMARY KEY(ID_PRESTAMO),
+    CONSTRAINT FK_ID_SOCIO FOREIGN KEY(ID_SOCIO) REFERENCES socio(ID_SOCIO),
+    CONSTRAINT FK_ID_EDICION_NUMERO FOREIGN KEY(ID_EDICION, NUMERO) REFERENCES EJEMPLAR(ID_EDICION, NUMERO)
 );
-SELECT * FROM prestamo;
---Ej.1 Insertar socios
 
-CREATE OR REPLACE FUNCTION alta_socio (p_nombre VARCHAR2, p_apellidos VARCHAR2)
-RETURN CHAR IS
 
-    id3 CHAR(3);
-    v_continuar BOOLEAN := false;
-    v_contador NUMBER(1);
-    E_NO_HAY_TABLA EXCEPTION;
-    Pragma Exception_Init(e_NO_HAY_TABLA, -6550);
-	
+
+CREATE OR REPLACE FUNCTION apertura_prestamo(p_id_socio SOCIO.ID_SOCIO%TYPE, p_id_edicion EJEMPLAR.ID_EDICION%TYPE, p_numero EJEMPLAR.NUMERO%TYPE)
+RETURN INTEGER AS
+    v_codigo INTEGER;  -- Declara una variable local para almacenar el código de resultado.
+    v_id_prestamo prestamo.ID_PRESTAMO%TYPE;  -- Declara una variable local para almacenar el ID de prestamo.
+    e_insert_error EXCEPTION;  -- Declara una excepción personalizada para errores de inserción.
+    PRAGMA EXCEPTION_INIT(e_insert_error, -20001);  -- Asigna un código de error a la excepción personalizada.
 BEGIN
-    --Generamos un ID de prestamo y realizamos la inserción.
-    LOOP    
-       id3:= dbms_random.string('X', 3);
-       SELECT COUNT(*) INTO v_contador FROM SOCIO
-           WHERE id_socio = id3;
-       IF (v_contador = 0) THEN
-          v_continuar := TRUE;
-       END IF;  
-       EXIT WHEN v_continuar;
-    END LOOP;
-	
-	--ANTES DE HACER EL INSERT COMPROBAR TAMBIÉN LOS VALORES NOT NULL AQUÍ !!!
-	
-    INSERT INTO socio (id_socio,nombre, apellidos) 
-	VALUES(id3,p_nombre,p_apellidos);
-    RETURN id3;
-	
+    v_id_prestamo := DBMS_RANDOM.STRING('X', 5);  -- Genera un ID de prestamo.
+
+    -- Manejo de errores para la inserción.
+    BEGIN
+        INSERT INTO prestamo (ID_PRESTAMO, ID_SOCIO, ID_EDICION, NUMERO, INICIO) 
+        VALUES (v_id_prestamo, p_id_socio, p_id_edicion, p_numero, SYSDATE);
+        v_codigo := 1;  -- Asigna 1 al código de resultado si la inserción es exitosa.
+        DBMS_OUTPUT.PUT_LINE('Se ha prestado el libro correctamente. ID de prestamo: ' || v_id_prestamo);
+    EXCEPTION
+        WHEN OTHERS THEN  -- Captura cualquier error durante la inserción.
+            RAISE_APPLICATION_ERROR(-20001, 'Error al insertar en la tabla prestamo: ' || SQLERRM);  -- Lanza un error personalizado.
+    END;
+
+    RETURN v_codigo;  -- Retorna el código de resultado.
+
 EXCEPTION
---Cuando la tabla no existe
-    WHEN E_NO_HAY_TABLA  THEN
-       DBMS_OUTPUT.PUT_LINE('La tabla de socios NO EXISTE');
-       RETURN -2;
-	   
---Cuando el id ya esta en uso
-    WHEN DUP_VAL_ON_INDEX THEN
-            DBMS_OUTPUT.PUT_LINE('El id ya está registrado: ' || SQLERRM);
-            ROLLBACK;
-            RETURN -3;
-    WHEN OTHERS THEN 
-       RETURN '-1';
+    WHEN e_insert_error THEN  -- Captura la excepción personalizada para errores de inserción.
+        v_codigo := -1;  -- Asigna -1 al código de resultado en caso de error de inserción.
+        RETURN v_codigo;  -- Retorna el código de resultado.
 END;
 /
-
-DECLARE
-    resultado VARCHAR2(100);
-BEGIN
-    resultado := alta_socio('Jose', 'Montés Guillermo');
-    DBMS_OUTPUT.PUT_LINE('Resultado: ' || resultado);
-END;
-/
-SELECT * FROM socio;
-
---Ej.2 Insertar prestmos
-
-CREATE TABLE prestamo(
-    id_prestamo CHAR(3) PRIMARY KEY,
-    id_socio CHAR(3),
-    id_edicion CHAR(6),
-    numero INTEGER,
-    f_apertura DATE,
-	f_cierre DATE,
-    CONSTRAINT FK_prestamo_socio FOREIGN KEY (id_socio) REFERENCES socio(id_socio)
-);
-SELECT * FROM prestamo;
