@@ -1,0 +1,968 @@
+PL/SQL cheat sheet
+
+-Estructura basica:
+
+	DECLARE
+	--seccion declarativ
+		
+	BEGIN
+	--seccion ejecutable
+
+	EXCEPTION
+	--manejo de errores y situaciones
+		
+	END;
+	--finalizacion del programa
+	
+-Pero admite esta (que es un ejemplo de BLOQUE ANONIMO):
+
+	BEGIN
+	--seccion ejecutable
+
+	END;
+	--finalizacion del programa
+	
+-Para señalar que la salida de datos sea por la consola:
+
+set serveroutput on;
+	
+*Bloque anonimo: se construyen de forma dinamica y se ejecutan una sola vez
+y no tienen nombre.
+
+*Bloque con nombre: dinamicos y se ejecutan una sola vez.
+
+*Triggers(disparadores): Bloque con nombre que se almacena tambien en
+la base de datos, no suelen cambiar despues de su eejcucion y se ejecutan 
+varias veces.
+
+********************************************************************
+ -Ejemplo hello world
+ 
+set serveroutput on;
+CREATE OR REPLACE PROCEDURE saludo 
+AS 
+BEGIN 
+   dbms_output.put_line('Hola a todos'); 
+END saludo; 
+
+	-Con eso creamos el procedure, lo ejecutamos para que se compile y despues:
+ 
+BEGIN
+	saludo;
+END;
+
+
+EXECUTE saludo;
+
+	-Con eso lo ejecutamos
+
+*****************************PROCEDIMIENTOS ALMACENADOS*****************************************
+
+
+-Ejemplo Procedimiento almacenado en el que accedemos a una tabla
+y le sumamos a los salarios un 10% de lo que son
+
+BBDD
+
+DROP TABLE PERSONAL cascade constraints; 
+
+CREATE TABLE PERSONAL (
+ COD_CENTRO   NUMBER(4) NOT NULL,
+ DNI NUMBER(10),
+ APELLIDOS VARCHAR2(30),
+ FUNCION VARCHAR2(15),
+ SALARIO NUMBER (10) 
+);
+
+INSERT INTO PERSONAL VALUES (10,1112345,'Mart�nez Salas, Fernando',
+'PROFESOR', 220000);
+INSERT INTO PERSONAL VALUES (10,4123005,'Bueno Zarco, Elisa', 
+'PROFESOR', 220000);
+INSERT INTO PERSONAL VALUES (10,4122025,'Montes Garc�a, M.Pilar', 
+'PROFESOR', 220000);
+
+CREATE OR REPLACE PROCEDURE aumento_salario
+AS
+BEGIN	
+	update personal set salario = salario + (salario*0.1);
+END aumento_salario;
+	
+execute aumento_salario;
+
+
+-Para borrarlo usamos 
+drop procedure aumento_salario;
+
+---------------------------------------------------------------------
+
+-Ejemplo con parametros de entrada (in), modificar salarios.
+
+create or replace procedure aumentasueldo(anio in number, porcentaje in number)
+as
+begin 
+update empleados set sueldo=sueldo+(sueldo*porcentaje/100)
+where (extract(year from current_date)-extract(year from fechaingreso))>anio;
+end aumentasueldo;
+
+execute aumentasueldo(10,20);
+
+-Ejemplo añadir empleados:
+
+
+create or replace procedure ingresoemple(docu in char, nom in varchar2, ape in varchar2)
+as
+begin
+    insert into empleados values(docu, nom, ape, null, null);
+    end ingresoemple;
+    
+    
+execute ingresoemple('3333333','Emilio','Perez');
+
+drop procedure ingresoemple;
+
+-----------------------------------------------------------------
+
+-Ejemplo con variables (pasar datos de una tabla a otra)
+
+CREATE TABLE tabla1 (
+  titulo VARCHAR2(40),
+  precio NUMBER(6,2)
+);
+
+
+-- Crear la tabla
+CREATE TABLE libros (
+    id_libro NUMBER PRIMARY KEY,
+    titulo VARCHAR2(100),
+    autor VARCHAR2(50),
+    precio NUMBER
+);
+
+-- Inserts
+INSERT INTO libros (id_libro, titulo, autor, precio) VALUES (1, 'Libro 1', 'Autor1', 20.50);
+INSERT INTO libros (id_libro, titulo, autor, precio) VALUES (2, 'Libro 2', 'Autor2', 15.75);
+INSERT INTO libros (id_libro, titulo, autor, precio) VALUES (3, 'Libro 3', 'Autor3', 30.00);
+
+create or replace procedure autorlibro(atitulo in varchar2)
+ as
+   v_autor varchar2(20);
+ begin
+  select autor into v_autor from libros where titulo=atitulo;
+  --en esta linea hemos dado valor a la variable
+  insert into tabla1
+   select titulo,precio
+   from libros
+   where autor=v_autor;
+   --Y ahi se la pasamos a la tabla nueva
+ end autorlibro;
+ 
+ BEGIN
+  autorlibro('Libro1');
+END;
+/
+
+select * from tabla1;
+
+
+*****************************	FUNCIONES	*****************************************
+-Ejemplo de funcion que le pasas un valor y te devuelve el mismo 
+multiplicado x2
+
+create or replace function f_prueba(valor number)
+	return number
+	is
+	begin 
+		return valor*2;
+	end;
+
+select f_prueba(2) as total from dual;
+--as total es para asignarle un nombre a la variable
+--from dual es porque no esta en ninguna tabla
+--y eso hace que se genere una de prueba
+
+
+-Funcion y como usarla que te dice si con la tabla libros de arriba
+segun el precio un libro es mas caro o mas barato
+
+create or replace function f_costo(valor number)
+return varchar
+is 
+    costo varchar(20);
+    begin
+        costo:='';
+        if valor<=20 then
+        costo:='economico';
+        else costo:='costoso';
+        end if;
+        return costo;
+end;
+
+select titulo, autor, precio, f_costo(precio) from libros;
+
+-----------------------------------------------------------------------
+
+**********************************************************************
+
+-PROCEDURES: Bloque de codigo que contiene instrucciones SQL y PLSQL
+y pueden recibir parametros.
+
+-FUNCTIONS: Bloque de codigo que contiene instrucciones SQL y PLSQL
+y pueden recibir parametros.
+
+
+-Diferencias:
+
+1-Valor de retorno
+
+	P - No tiene valor de retorno explicito.
+	Pueden realizar acciones, modificar datos, 
+	pero no devuelven un valor como resultado. Se 
+	utilizan principalmente para realizar tareas y 
+	realizar operaciones.
+	
+	F - Debe tener valor de retorno explicito.Devuelven 
+	un valor al final de la ejecución. Son útiles cuando 
+	necesitas obtener un resultado específico.
+	
+2-Uso en consultas SQL
+	
+	P - No se pueden llamar directamente desde una consulta. 
+	Son invocados mediante una sentencia EXECUTE o desde 
+	otro bloque PL/SQL.
+	
+	F - Pueden llamarse directamente desde una consulta SQL.
+	Pueden formar parte de una expresión SQL y se utilizan 
+	para calcular valores.
+	
+3-Sintaxis de invocacion
+
+	P - Se llaman con una sentencia EXECUTE o simplemente
+	por su nombre en un bloque PL/SQL.
+	
+	F - Se utilizan en expresiones y se llaman como parte de una
+	consulta SQL. Tambien pueden ser llamadas desde un bloque
+	PL/SQL de la misma manera que un procedimiento.
+
+--------------------------------------------------------------------
+
+-Ejemplos de diferencicion:
+	
+	Procedimiento
+	
+CREATE OR REPLACE PROCEDURE ejemplo_procedimiento(p_numero IN NUMBER) AS
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('El número proporcionado es: ' || p_numero);
+END ejemplo_procedimiento;
+/
+
+	Funcion
+
+CREATE OR REPLACE FUNCTION ejemplo_funcion(p_numero IN NUMBER) RETURN NUMBER IS
+  v_resultado NUMBER;
+BEGIN
+  v_resultado := p_numero * 2;
+  RETURN v_resultado;
+END ejemplo_funcion;
+/
+
+
+--------------------------------------------------------------------
+
+-Ejemplos de una llamada a cada uno
+
+	Procedimiento
+	
+BEGIN
+  ejemplo_procedimiento(10);
+END;
+/
+
+	
+	Funcion
+	
+DECLARE
+  resultado NUMBER;
+BEGIN
+  resultado := ejemplo_funcion(10);
+  DBMS_OUTPUT.PUT_LINE('El resultado de la función es: ' || resultado);
+END;
+/
+
+
+**********************************************************************
+
+-Ejercicios de Diego
+
+1-Suma dos numeros
+
+-- Declaración de un procedimiento en PL/SQL
+CREATE OR REPLACE PROCEDURE mostrar_suma(p_numero1 IN NUMBER, p_numero2 IN NUMBER) AS
+  -- Declaración de variables
+  v_suma NUMBER;
+
+BEGIN
+  -- Sección ejecutable
+  -- Calcula la suma de los dos números
+  v_suma := p_numero1 + p_numero2;
+
+  -- Visualiza la suma
+  DBMS_OUTPUT.PUT_LINE('La suma de ' || p_numero1 || ' y ' || p_numero2 || ' es: ' || v_suma);
+
+EXCEPTION
+  -- Manejo de errores (puedes personalizar según tus necesidades)
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+
+END mostrar_suma;
+/
+
+-- Llamada al procedimiento desde un bloque anónimo
+BEGIN
+  mostrar_suma(5, 7);
+END;
+/
+
+
+----------------------------------------------------------------------
+
+2-Devolver una cadena al reves
+
+-- Declaración de un procedimiento en PL/SQL
+CREATE OR REPLACE PROCEDURE mostrar_al_reves(p_cadena IN VARCHAR2) AS
+  -- Declaración de variables
+  v_cadena_al_reves VARCHAR2(4000) := '';
+  v_length NUMBER;
+
+BEGIN
+  -- Sección ejecutable
+  -- Calcula la longitud de la cadena
+  v_length := LENGTH(p_cadena);
+
+  -- Invierte la cadena usando un bucle
+  FOR i IN REVERSE 1..v_length LOOP
+    v_cadena_al_reves := v_cadena_al_reves || SUBSTR(p_cadena, i, 1);
+  END LOOP;
+
+  -- Visualiza la cadena al revés
+  DBMS_OUTPUT.PUT_LINE('La cadena al revés es: ' || v_cadena_al_reves);
+
+EXCEPTION
+  -- Manejo de errores (puedes personalizar según tus necesidades)
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+
+END mostrar_al_reves;
+/
+
+-- Llamada al procedimiento desde un bloque anónimo
+BEGIN
+  mostrar_al_reves('Hola mundo');
+END;
+/
+
+----------------------------------------------------------------------
+
+3-Transformar en funciones los dos ejercicios anteriores para que retornen
+los valores que mostraban los procedimientos
+
+-- Declaración de una función en PL/SQL para la suma
+CREATE OR REPLACE FUNCTION obtener_suma(p_numero1 IN NUMBER, p_numero2 IN NUMBER) RETURN NUMBER IS
+  -- Declaración de variable local
+  v_suma NUMBER;
+
+BEGIN
+  -- Sección ejecutable
+  -- Calcula la suma de los dos números
+  v_suma := p_numero1 + p_numero2;
+
+  -- Retorna el valor de la suma
+  RETURN v_suma;
+
+EXCEPTION
+  -- Manejo de errores (puedes personalizar según tus necesidades)
+  WHEN OTHERS THEN
+    -- Puedes registrar el error o manejarlo de otra manera
+    RETURN NULL;
+
+END obtener_suma;
+/
+DECLARE
+  resultado NUMBER;
+BEGIN
+  resultado := obtener_suma(5, 7);
+  DBMS_OUTPUT.PUT_LINE('La suma es: ' || resultado);
+END;
+/
+
+----------------------------------------------------------------------
+3-Transformar en funciones los dos ejercicios anteriores para que retornen
+los valores que mostraban los procedimientos
+
+-- Declaración de una función en PL/SQL para invertir una cadena
+CREATE OR REPLACE FUNCTION obtener_cadena_al_reves(p_cadena IN VARCHAR2) RETURN VARCHAR2 IS
+  -- Declaración de variables locales
+  v_cadena_al_reves VARCHAR2(4000) := '';
+  v_length NUMBER;
+
+BEGIN
+  -- Sección ejecutable
+  -- Calcula la longitud de la cadena
+  v_length := LENGTH(p_cadena);
+
+  -- Invierte la cadena usando un bucle
+  FOR i IN REVERSE 1..v_length LOOP
+    v_cadena_al_reves := v_cadena_al_reves || SUBSTR(p_cadena, i, 1);
+  END LOOP;
+
+  -- Retorna la cadena invertida
+  RETURN v_cadena_al_reves;
+
+EXCEPTION
+  -- Manejo de errores (puedes personalizar según tus necesidades)
+  WHEN OTHERS THEN
+    -- Puedes registrar el error o manejarlo de otra manera
+    RETURN NULL;
+
+END obtener_cadena_al_reves;
+/
+
+DECLARE
+  cadena_invertida VARCHAR2(4000);
+BEGIN
+  cadena_invertida := obtener_cadena_al_reves('Hola mundo');
+  DBMS_OUTPUT.PUT_LINE('La cadena al revés es: ' || cadena_invertida);
+END;
+/
+
+----------------------------------------------------------------------
+
+4-Escribe una funcion que reciba una fecha y devuelva el año, 
+en numero, correspondiente a esa fecha:
+
+
+-- Declaración de una función en PL/SQL para obtener el año de una fecha
+CREATE OR REPLACE FUNCTION obtener_anio(p_fecha IN DATE) RETURN NUMBER IS
+  -- Declaración de variable local
+  v_anio NUMBER;
+
+BEGIN
+  -- Sección ejecutable
+  -- Extrae el año de la fecha
+  v_anio := EXTRACT(YEAR FROM p_fecha);
+
+  -- Retorna el año como número
+  RETURN v_anio;
+
+EXCEPTION
+  -- Manejo de errores (puedes personalizar según tus necesidades)
+  WHEN OTHERS THEN
+    -- Puedes registrar el error o manejarlo de otra manera
+    RETURN NULL;
+
+END obtener_anio;
+/
+
+DECLARE
+  fecha_ingresada DATE := TO_DATE('2023-12-09', 'YYYY-MM-DD');
+  anio_resultante NUMBER;
+BEGIN
+  anio_resultante := obtener_anio(fecha_ingresada);
+  DBMS_OUTPUT.PUT_LINE('El año correspondiente a la fecha es: ' || anio_resultante);
+END;
+/
+
+----------------------------------------------------------------------
+
+5-Escribe un bloque PL/SQL que haga uso de la funcion anterior.
+
+DECLARE
+  fecha_ingresada DATE := TO_DATE('2023-12-09', 'YYYY-MM-DD');
+  anio_resultante NUMBER;
+BEGIN
+  -- Llama a la función para obtener el año de la fecha
+  anio_resultante := obtener_anio(fecha_ingresada);
+
+  -- Verifica si se obtuvo un resultado válido
+  IF anio_resultante IS NOT NULL THEN
+    DBMS_OUTPUT.PUT_LINE('El año correspondiente a la fecha ' || TO_CHAR(fecha_ingresada, 'DD-MON-YYYY') || ' es: ' || anio_resultante);
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('Error al obtener el año.');
+  END IF;
+
+EXCEPTION
+  -- Manejo de errores (puedes personalizar según tus necesidades)
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+
+END;
+/
+
+----------------------------------------------------------------------
+
+9-Funcion que devulva solamente caracteres alfabeticos, sustituyendo
+cualquier otro caracter por blancos a partir de una cadena que le pases:
+
+-- Declaración de una función en PL/SQL para obtener solo caracteres alfabéticos
+CREATE OR REPLACE FUNCTION obtener_alfabeticos(p_cadena IN VARCHAR2) RETURN VARCHAR2 IS
+  -- Declaración de variable local
+  v_cadena_alfabetica VARCHAR2(4000) := '';
+  v_longitud NUMBER;
+
+BEGIN
+  -- Sección ejecutable
+  -- Calcula la longitud de la cadena
+  v_longitud := LENGTH(p_cadena);
+
+  -- Itera sobre cada carácter de la cadena
+  FOR i IN 1..v_longitud LOOP
+    -- Si el carácter es alfabético, agrégalo a la nueva cadena
+    IF REGEXP_LIKE(SUBSTR(p_cadena, i, 1), '[[:alpha:]]') THEN
+      v_cadena_alfabetica := v_cadena_alfabetica || SUBSTR(p_cadena, i, 1);
+    ELSE
+      -- Si no es alfabético, agrega un espacio en blanco
+      v_cadena_alfabetica := v_cadena_alfabetica || ' ';
+    END IF;
+  END LOOP;
+
+  -- Retorna la cadena resultante
+  RETURN v_cadena_alfabetica;
+
+EXCEPTION
+  -- Manejo de errores (puedes personalizar según tus necesidades)
+  WHEN OTHERS THEN
+    -- Puedes registrar el error o manejarlo de otra manera
+    RETURN NULL;
+
+END obtener_alfabeticos;
+/
+
+DECLARE
+  cadena_original VARCHAR2(4000) := 'Hola 123 mundo!';
+  cadena_alfabetica VARCHAR2(4000);
+BEGIN
+  cadena_alfabetica := obtener_alfabeticos(cadena_original);
+  DBMS_OUTPUT.PUT_LINE('Cadena original: ' || cadena_original);
+  DBMS_OUTPUT.PUT_LINE('Cadena alfabética: ' || cadena_alfabetica);
+END;
+/
+
+----------------------------------------------------------------------
+
+11-Escribe un procedimiento que modifique la localidad de un departamento. 
+El procedimiento recibira como parametros el numero del departamento y 
+la nueva localidad:
+
+-- Declaración de un procedimiento en PL/SQL para modificar la localidad de un departamento
+CREATE OR REPLACE PROCEDURE modificar_localidad(
+    p_numero_departamento IN NUMBER,
+    p_nueva_localidad IN VARCHAR2
+) AS
+BEGIN
+  -- Sección ejecutable
+  -- Actualiza la localidad del departamento en la base de datos
+  UPDATE departamentos
+  SET localidad = p_nueva_localidad
+  WHERE departamento_id = p_numero_departamento;
+
+  -- Comprueba si se realizaron cambios
+  IF SQL%ROWCOUNT = 1 THEN
+    DBMS_OUTPUT.PUT_LINE('Localidad del departamento ' || p_numero_departamento || ' modificada a: ' || p_nueva_localidad);
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('No se encontró el departamento ' || p_numero_departamento);
+  END IF;
+
+EXCEPTION
+  -- Manejo de errores (puedes personalizar según tus necesidades)
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+
+END modificar_localidad;
+/
+
+
+-- Llamada al procedimiento desde un bloque anónimo
+BEGIN
+  modificar_localidad(10, 'Nueva Localidad');
+END;
+/
+
+
+**********************************************************************
+
+-Ejemplos clase Diego
+
+pg 260
+
+CREATE OR REPLACE FUNCTION Encontrar_emple(v_apellido EMPLE.apellido%TYPE DEFAULT 'GIL')
+RETURN REAL
+AS
+/* Zona de declaración de variables*/
+v_numemple EMPLE.emp_no%TYPE;
+
+BEGIN
+/* Zona de código*/
+   SELECT emp_no INTO v_numemple FROM EMPLE
+   WHERE UPPER(apellido) = UPPER(v_apellido);
+/* Comparación en Mayus. por problemas de ASCIIs 'a' != 'A'
+ P.e. 'López' != 'LÓPEZ' para SQL*/
+   
+   RETURN v_numemple;  /* Aqui solo llego sino hay errores */
+
+/* Fin del prog. ppal (de la función)*/
+
+EXCEPTION
+/* Código de manejo de errores  ver pg 290
+// Error 1: No hay permisos del usuario sobre EMPLE
+// Error 2: Que haya más de un empleado con ese apellido
+// Error 3: Que no haya ningún empleado con ese apellido
+*/
+WHEN TOO_MANY_ROWS THEN  /* Error 2 */
+   DBMS_OUTPUT.PUT_LINE('Error !!! Hay más de un empleado con el apellido ' || v_apellido);
+   RETURN(-1);
+
+WHEN NO_DATA_FOUND THEN  /* Error 3 */
+   DBMS_OUTPUT.PUT_LINE('Error !!! No hay ningún empleado con el apellido ' || v_apellido);
+   RETURN(-1);
+   
+WHEN OTHERS THEN
+   DBMS_OUTPUT.PUT_LINE(' Error desconocido !!!');
+   RETURN(-1);
+
+END Encontrar_emple;
+/
+
+
+DECLARE  /*Primera forma de ejecutar la función anterior, con un parámetro*/
+   v_num REAL;
+BEGIN
+   v_num := Encontrar_emple('Gil');
+   DBMS_OUTPUT.PUT_LINE('El número de Gil es: '||v_num);
+END;
+/
+
+
+DECLARE  /*Segunda forma de ejecutar la función anterior, sin parámetro
+            ver pg 263 */
+   v_num REAL;
+BEGIN
+   v_num := Encontrar_emple();
+   DBMS_OUTPUT.PUT_LINE('El número de Gil es: '||v_num);
+END;
+/
+
+-------------------------------------------------------------------------
+
+PARAMETROS DE TIPO IN OUT
+
+Segunda versión de la función anterior, en esta función si hay error, no petará la función sino que devolverá -1 y en v_apellido el error correspondiente
+
+pg 260
+
+CREATE OR REPLACE FUNCTION Encontrar_emple(v_apellido IN OUT EMPLE.apellido%TYPE DEFAULT 'GIL')
+RETURN REAL
+AS
+/* Zona de declaración de variables*/
+v_numemple EMPLE.emp_no%TYPE;
+
+BEGIN
+/* Zona de código
+   SELECT emp_no INTO v_numemple FROM EMPLE
+   WHERE UPPER(apellido) = UPPER(v_apellido);
+// Comparación en Mayus. por problemas de ASCIIs 'a' != 'A'
+// P.e. 'López' != 'LÓPEZ' para SQL
+*/ 
+   RETURN v_numemple;  /* Aqui solo llego sino hay errores */
+
+/* Fin del prog. ppal (de la función)*/
+
+EXCEPTION
+/* Código de manejo de errores  ver pg 290
+// Error 1: No hay permisos del usuario sobre EMPLE
+// Error 2: Que haya más de un empleado con ese apellido
+// Error 3: Que no haya ningún empleado con ese apellido
+*/
+WHEN TOO_MANY_ROWS THEN  /* Error 2 */
+   v_apellido := 'Más de un empleado';
+   RETURN -1;
+
+WHEN NO_DATA_FOUND THEN  /* Error 3 */
+   v_apellido := 'No datos';
+   RETURN -1;
+   
+WHEN OTHERS THEN
+   DBMS_OUTPUT.PUT_LINE(' Error desconocido !!!');
+
+
+END Encontrar_emple;
+/
+
+DECLARE  /*Invoco la función controlando errores */
+   v_num REAL;
+   v_apellido VARCHAR2(40);
+BEGIN
+   v_apellido := 'GIL';
+   v_num := Encontrar_emple(v_apellido);
+   IF (v_num <> -1) THEN
+   	DBMS_OUTPUT.PUT_LINE('El número de Gil es: '||v_num);
+   ELSE
+        DBMS_OUTPUT.PUT_LINE('Error !!!: '||v_apellido);   
+   END IF;
+END;
+/
+
+-------------------------------------------------------------------------
+
+1-Prueba con control de errores:
+
+// Recordad !!!  Hay que activar la variable de sesión SERVER_OUTPUT para poder ver por pantalla los mensajes:
+//  Antes de ejecutar nada, por línea de comando la activo
+// SET SERVER_OUTPUT ON
+
+DECLARE
+  v_dept99 NUMBER(2):=0;
+  v_num_empleados NUMBER(2);
+
+BEGIN
+  SELECT DEPT_NO INTO v_dept99 FROM DEPART WHERE dept_no =99;  
+
+  IF (v_dept99 <> 99)
+   THEN 
+     INSERT INTO DEPART VALUES (99, 'TEMPORAL', 'TEMPORAL');
+  END IF;
+
+  UPDATE EMPLE SET dept_no = 99 WHERE dept_no = 10;
+  v_num_empleados := SQL%ROWCOUNT;
+  DBMS_OUTPUT.PUT_LINE(v_num_empleados || ' empleados ubicados en PROVISIONAL');
+  DELETE FROM DEPART WHERE dept_no = 10;
+
+  EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE(' NO EXISTE EL DEPT PROVISIONAL');
+    INSERT INTO DEPART VALUES (99, 'TEMPORAL', 'TEMPORAL');
+END;
+/
+
+-------------------------------------------------------------------------
+
+2-Con procedure 
+
+// Recordad !!!  Hay que activar la variable de sesión SERVER_OUTPUT para poder ver por pantalla los mensajes:
+//  Antes de ejecutar nada, por línea de comando la activo
+// SET SERVER_OUTPUT ON
+
+CREATE PROCEDURE 
+mover_empleados (v_deptno IN NUMBER)
+IS
+
+  v_dept99 NUMBER(2):=0;
+  v_num_empleados NUMBER(2);
+
+BEGIN
+  SELECT DEPT_NO INTO v_dept99 FROM DEPART WHERE dept_no =99;  
+
+  IF (v_dept99 <> 99)
+   THEN 
+     INSERT INTO DEPART VALUES (99, 'TEMPORAL', 'TEMPORAL');
+  END IF;
+
+  UPDATE EMPLE SET dept_no = 99 WHERE dept_no = v_deptno;
+  v_num_empleados := SQL%ROWCOUNT;
+  DBMS_OUTPUT.PUT_LINE(v_num_empleados || ' empleados ubicados en PROVISIONAL');
+  DELETE FROM DEPART WHERE dept_no = v_deptno;
+
+  EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE(' NO EXISTE EL DEPT PROVISIONAL');
+    INSERT INTO DEPART VALUES (99, 'TEMPORAL', 'TEMPORAL');
+END;
+/
+
+****************************	USOS	***********************************************
+-FOR
+-- Ejemplo de bucle FOR
+DECLARE
+  n NUMBER;
+BEGIN
+  FOR i IN 1..5 LOOP
+    n := i * 2;
+    DBMS_OUTPUT.PUT_LINE('El doble de ' || i || ' es ' || n);
+  END LOOP;
+END;
+/
+
+-WHILE
+-- Ejemplo de bucle WHILE
+DECLARE
+  i NUMBER := 1;
+  n NUMBER;
+BEGIN
+  WHILE i <= 5 LOOP
+    n := i * 2;
+    DBMS_OUTPUT.PUT_LINE('El doble de ' || i || ' es ' || n);
+    i := i + 1;
+  END LOOP;
+END;
+/
+
+
+-IF
+-- Ejemplo de estructura IF
+DECLARE
+  x NUMBER := 10;
+BEGIN
+  IF x > 0 THEN
+    DBMS_OUTPUT.PUT_LINE('x es positivo');
+  ELSIF x < 0 THEN
+    DBMS_OUTPUT.PUT_LINE('x es negativo');
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('x es cero');
+  END IF;
+END;
+/
+
+
+********************Ejercicios mas comunes de PL/SQL************************
+
+1. Procedimiento de Inserción: Crea un procedimiento que 
+acepte parámetros para insertar datos en una tabla específica.
+
+CREATE OR REPLACE PROCEDURE InsertarDatos(p_nombre VARCHAR2, p_valor NUMBER) AS
+BEGIN
+  INSERT INTO MiTabla (nombre, valor) VALUES (p_nombre, p_valor);
+END InsertarDatos;
+/
+
+----------------------------------------------------------------------------
+2. Función de Suma: Escribe una función que sume los valores de una columna 
+en una tabla y devuelva el resultado.
+
+CREATE OR REPLACE FUNCTION SumaColumna RETURN NUMBER IS
+  v_resultado NUMBER;
+BEGIN
+  SELECT SUM(columna) INTO v_resultado FROM MiTabla;
+  RETURN v_resultado;
+END SumaColumna;
+/
+
+----------------------------------------------------------------------------
+3. Procedimiento de Actualización: Crea un procedimiento que acepte 
+parámetros para actualizar datos en una tabla según una condición.
+
+CREATE OR REPLACE PROCEDURE ActualizarDatos(p_condicion VARCHAR2, p_nuevo_valor NUMBER) AS
+BEGIN
+  UPDATE MiTabla SET columna = p_nuevo_valor WHERE condicion = p_condicion;
+END ActualizarDatos;
+/
+
+----------------------------------------------------------------------------
+4. Manejo de Excepciones: Desarrolla un bloque PL/SQL que maneje excepciones y 
+muestre mensajes personalizados en función del tipo de error.
+
+DECLARE
+  v_valor NUMBER;
+BEGIN
+  SELECT columna INTO v_valor FROM MiTabla WHERE condicion = 'alguna condición';
+  DBMS_OUTPUT.PUT_LINE('Valor encontrado: ' || v_valor);
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('No se encontraron datos.');
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('Error inesperado.');
+END;
+/
+
+
+----------------------------------------------------------------------------
+5. Cursor Explícito: Utiliza un cursor explícito para recorrer y mostrar 
+datos de una tabla.
+
+DECLARE
+  CURSOR mi_cursor IS SELECT columna FROM MiTabla;
+  v_valor NUMBER;
+BEGIN
+  OPEN mi_cursor;
+  LOOP
+    FETCH mi_cursor INTO v_valor;
+    EXIT WHEN mi_cursor%NOTFOUND;
+    DBMS_OUTPUT.PUT_LINE('Valor: ' || v_valor);
+  END LOOP;
+  CLOSE mi_cursor;
+END;
+/
+
+----------------------------------------------------------------------------
+6. Procedimiento de Eliminación: Crea un procedimiento que acepte parámetros 
+para eliminar registros de una tabla según una condición.
+
+CREATE OR REPLACE PROCEDURE EliminarDatos(p_condicion VARCHAR2) AS
+BEGIN
+  DELETE FROM MiTabla WHERE condicion = p_condicion;
+END EliminarDatos;
+/
+
+----------------------------------------------------------------------------
+7. Función con Cursor: Escribe una función que utilice un cursor para procesar 
+datos y devolver un resultado basado en ciertos criterios.
+
+CREATE OR REPLACE FUNCTION ObtenerDatos RETURN VARCHAR2 IS
+  CURSOR mi_cursor IS SELECT columna FROM MiTabla;
+  v_valor VARCHAR2(100);
+BEGIN
+  OPEN mi_cursor;
+  FETCH mi_cursor INTO v_valor;
+  CLOSE mi_cursor;
+  RETURN v_valor;
+END ObtenerDatos;
+/
+
+
+----------------------------------------------------------------------------
+8. Procedimiento con Transacción: Desarrolla un procedimiento que realice varias 
+operaciones dentro de una transacción y que pueda ser confirmada o revertida 
+según un parámetro.
+
+CREATE OR REPLACE PROCEDURE ProcesoConTransaccion(p_confirmar BOOLEAN) AS
+BEGIN
+  BEGIN
+    -- Operaciones dentro de la transacción
+    INSERT INTO MiTabla (columna) VALUES ('valor1');
+    UPDATE OtraTabla SET columna = 'nuevo_valor' WHERE condicion = 'alguna_condicion';
+    -- ... más operaciones
+
+    -- Confirmar o revertir la transacción según el parámetro
+    IF p_confirmar THEN
+      COMMIT;
+    ELSE
+      ROLLBACK;
+    END IF;
+  EXCEPTION
+    WHEN OTHERS THEN
+      -- Manejo de errores
+      ROLLBACK;
+  END;
+END ProcesoConTransaccion;
+/
+
+----------------------------------------------------------------------------
+9. Función con Manejo de Fechas: Crea una función que acepte fechas como 
+parámetros y realice cálculos basados en esas fechas.
+
+CREATE OR REPLACE FUNCTION CalcularDiferenciaFechas(p_fecha1 DATE, p_fecha2 DATE) RETURN NUMBER IS
+  v_diferencia NUMBER;
+BEGIN
+  v_diferencia := p_fecha2 - p_fecha1;
+  RETURN v_diferencia;
+END CalcularDiferenciaFechas;
+/
+
+----------------------------------------------------------------------------
+10. Bloque Anónimo con Trigger: Diseña un bloque anónimo que active un trigger 
+después de insertar datos en una tabla, realizando alguna acción específica.
+
+DECLARE
+  v_valor NUMBER;
+BEGIN
+  INSERT INTO MiTabla (columna) VALUES ('nuevo_valor');
+  -- Aquí se activaría el trigger asociado a la tabla
+END;
+/
