@@ -1,29 +1,52 @@
---Creacion de tablas
---Ver errores
-show errors
-
--- tabla socio
-CREATE TABLE socio(
-    ID_SOCIO CHAR(5),
-    NOMBRE VARCHAR(30),
-    APELLIDOS VARCHAR(100),
-    CONSTRAINT PK_IS_SOCIO PRIMARY KEY(ID_SOCIO)
+--Creanmos la tabla socio
+CREATE TABLE socio (
+    id_socio CHAR(3) PRIMARY KEY,
+    nombre VARCHAR(15),
+    apellidos VARCHAR(30)
 );
+SELECT * FROM socio;
 
+--Ej.1 Insertar socios
 
--- tabla prestamo
-CREATE TABLE prestamo(
-    ID_PRESTAMO CHAR(5),
-    ID_SOCIO CHAR(5),
-    ID_EDICION CHAR(6),
-    NUMERO INTEGER,
-    INICIO DATE,
-    FIN DATE,
-    CONSTRAINT PK_ID_PRESTAMO PRIMARY KEY(ID_PRESTAMO),
-    CONSTRAINT FK_ID_SOCIO FOREIGN KEY(ID_SOCIO) REFERENCES socio(ID_SOCIO),
-    CONSTRAINT FK_ID_EDICION_NUMERO FOREIGN KEY(ID_EDICION, NUMERO) REFERENCES EJEMPLAR(ID_EDICION, NUMERO)
-);
-
---EJ.1 	
-
+CREATE OR REPLACE FUNCTION alta_socio (nombre VARCHAR2, apellidos VARCHAR2)
+RETURN CHAR IS
+    id3 CHAR(3);
+    v_continuar BOOLEAN := false;
+    v_contador NUMBER(1);
+    E_NO_HAY_TABLA EXCEPTION;
+    Pragma Exception_Init(e_NO_HAY_TABLA, -6550);
+BEGIN
+    --Generamos un ID de prestamo y realizamos la inserción.
+    LOOP    
+       id3:= dbms_random.string('X', 3);
+       SELECT COUNT(*) INTO v_contador FROM SOCIO
+           WHERE id_socio = id3;
+       IF (v_contador = 0) THEN
+          v_continuar := TRUE;
+       END IF;  
+       EXIT WHEN v_continuar;
+    END LOOP;
+    // ANTES DE HACER EL INSERT COMPROBAR TAMBIÉN LOS VALORES NOT NULL AQUÍ !!!
+    INSERT INTO socio (id_socio,nombre, apellidos) VALUES(id3,nombre, apellidos);
+    RETURN id3;
+EXCEPTION
+    WHEN E_NO_HAY_TABLA  THEN
+       DBMS_OUTPUT.PUT_LINE('La tabla de socios NO EXISTE');
+       RETURN -2;
+    WHEN DUP_VAL_ON_INDEX THEN
+            DBMS_OUTPUT.PUT_LINE('El id ya está registrado: ' || SQLERRM);
+            ROLLBACK;
+            RETURN -3;
+    WHEN OTHERS THEN 
+       RETURN '-1';
+END;
+/
+DECLARE
+    resultado VARCHAR2(100);
+BEGIN
+    resultado := alta_socio('Jose', 'Montés Guillermo');
+    DBMS_OUTPUT.PUT_LINE('Resultado: ' || resultado);
+END;
+/
+SELECT * FROM socio;
 
