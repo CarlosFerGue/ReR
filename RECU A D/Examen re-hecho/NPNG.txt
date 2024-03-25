@@ -1,14 +1,16 @@
 --Creacion de tablas
+--Ver errores
+show errors
 
 CREATE TABLE socio (
-    id_socio VARCHAR(10) PRIMARY KEY,
+    id_socio INTEGER PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE prestamo (
-    id_prestamo VARCHAR(10) PRIMARY KEY,
-    id_socio VARCHAR(10),
+    id_prestamo INTEGER PRIMARY KEY,
+    id_socio INTEGER,
     fecha_inicio VARCHAR(20) NOT NULL,
     fecha_fin DATE NOT NULL,
     fecha_dado_de_baja DATE,
@@ -16,15 +18,54 @@ CREATE TABLE prestamo (
 );
 
 CREATE TABLE sanciones (
-    id_sancion VARCHAR(10) PRIMARY KEY,
-    id_socio VARCHAR(10),
-    id_prestamo VARCHAR(10),
+    id_sancion INTEGER PRIMARY KEY,
+    id_socio INTEGER,
+    id_prestamo INTEGER,
     fecha_sancion DATE NOT NULL,
     tipo_sancion VARCHAR(50) NOT NULL,
     FOREIGN KEY (id_socio) REFERENCES socio(id_socio),
     FOREIGN KEY (id_prestamo) REFERENCES prestamo(id_prestamo)
 );
 
---Ej.1 INTRODUCCION DE SOCIOS
+--EJ.1 	
 
---Ej.1 INTRODUCCION DE PRESTAMOS
+-- Función para insertar un socio
+CREATE OR REPLACE FUNCTION insertar_socio (p_id INTEGER, p_nombre VARCHAR2, p_apellido VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+    INSERT INTO socio (id_socio, nombre, apellidos) VALUES (p_id, p_nombre, p_apellido);
+    RETURN 'Inserción exitosa';
+EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
+        RETURN 'Error: ID duplicada';
+    WHEN OTHERS THEN
+        RETURN 'Error: ' || SQLERRM;
+END;
+/
+
+-- Función para abrir un préstamo
+CREATE OR REPLACE FUNCTION abrir_prestamo (p_id_prestamo INTEGER, p_id_socio INTEGER, p_fecha_inicio VARCHAR2, p_fecha_fin DATE) RETURN VARCHAR2 IS
+BEGIN
+    INSERT INTO prestamo (id_prestamo, id_socio, fecha_inicio, fecha_fin) VALUES (p_id_prestamo, p_id_socio, p_fecha_inicio, p_fecha_fin);
+    RETURN 'Préstamo abierto exitosamente';
+EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
+        RETURN 'Error: ID de préstamo duplicada';
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Error: Socio no encontrado';
+    WHEN OTHERS THEN
+        RETURN 'Error: ' || SQLERRM;
+END;
+/
+
+-- Función para cerrar un préstamo
+CREATE OR REPLACE FUNCTION cerrar_prestamo (p_id_prestamo INTEGER, p_fecha_dado_de_baja DATE) RETURN VARCHAR2 IS
+BEGIN
+    UPDATE prestamo SET fecha_dado_de_baja = p_fecha_dado_de_baja WHERE id_prestamo = p_id_prestamo;
+    RETURN 'Préstamo cerrado exitosamente';
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Error: Préstamo no encontrado';
+    WHEN OTHERS THEN
+        RETURN 'Error: ' || SQLERRM;
+END;
+/
