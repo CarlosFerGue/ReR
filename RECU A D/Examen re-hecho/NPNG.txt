@@ -6,15 +6,28 @@ CREATE TABLE socio (
 );
 SELECT * FROM socio;
 
+CREATE TABLE prestamo(
+    id_prestamo CHAR(3) PRIMARY KEY,
+    id_socio CHAR(3),
+    id_edicion CHAR(6),
+    numero INTEGER,
+    f_apertura DATE,
+	f_cierre DATE,
+    CONSTRAINT FK_prestamo_socio FOREIGN KEY (id_socio) REFERENCES socio(id_socio),
+    CONSTRAINT FK_prestamo_edicion FOREIGN KEY (id_edicion) REFERENCES edicion(id)
+);
+SELECT * FROM prestamo;
 --Ej.1 Insertar socios
 
-CREATE OR REPLACE FUNCTION alta_socio (nombre VARCHAR2, apellidos VARCHAR2)
+CREATE OR REPLACE FUNCTION alta_socio (p_nombre VARCHAR2, p_apellidos VARCHAR2)
 RETURN CHAR IS
+
     id3 CHAR(3);
     v_continuar BOOLEAN := false;
     v_contador NUMBER(1);
     E_NO_HAY_TABLA EXCEPTION;
     Pragma Exception_Init(e_NO_HAY_TABLA, -6550);
+	
 BEGIN
     --Generamos un ID de prestamo y realizamos la inserción.
     LOOP    
@@ -26,13 +39,20 @@ BEGIN
        END IF;  
        EXIT WHEN v_continuar;
     END LOOP;
-    // ANTES DE HACER EL INSERT COMPROBAR TAMBIÉN LOS VALORES NOT NULL AQUÍ !!!
-    INSERT INTO socio (id_socio,nombre, apellidos) VALUES(id3,nombre, apellidos);
+	
+	--ANTES DE HACER EL INSERT COMPROBAR TAMBIÉN LOS VALORES NOT NULL AQUÍ !!!
+	
+    INSERT INTO socio (id_socio,nombre, apellidos) 
+	VALUES(id3,p_nombre,p_apellidos);
     RETURN id3;
+	
 EXCEPTION
+--Cuando la tabla no existe
     WHEN E_NO_HAY_TABLA  THEN
        DBMS_OUTPUT.PUT_LINE('La tabla de socios NO EXISTE');
        RETURN -2;
+	   
+--Cuando el id ya esta en uso
     WHEN DUP_VAL_ON_INDEX THEN
             DBMS_OUTPUT.PUT_LINE('El id ya está registrado: ' || SQLERRM);
             ROLLBACK;
@@ -41,6 +61,7 @@ EXCEPTION
        RETURN '-1';
 END;
 /
+
 DECLARE
     resultado VARCHAR2(100);
 BEGIN
@@ -50,3 +71,15 @@ END;
 /
 SELECT * FROM socio;
 
+--Ej.2 Insertar prestmos
+
+CREATE TABLE prestamo(
+    id_prestamo CHAR(3) PRIMARY KEY,
+    id_socio CHAR(3),
+    id_edicion CHAR(6),
+    numero INTEGER,
+    f_apertura DATE,
+	f_cierre DATE,
+    CONSTRAINT FK_prestamo_socio FOREIGN KEY (id_socio) REFERENCES socio(id_socio)
+);
+SELECT * FROM prestamo;
