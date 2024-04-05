@@ -15,7 +15,6 @@ public class Maitre extends Thread {
     //Constructor
     public Maitre() {
         System.out.println("Maitre creado");
-        start();
     }
 
     synchronized public void recibirCliente(Socket skCliente) throws IOException {
@@ -23,6 +22,7 @@ public class Maitre extends Thread {
         DataInputStream flujoEntrada = new DataInputStream(skCliente.getInputStream());
         //Para poder escribir
         DataOutputStream flujoSalida = new DataOutputStream(skCliente.getOutputStream());
+
         String mensaje = flujoEntrada.readUTF();
 
         //Dividimos el mensaje
@@ -45,7 +45,7 @@ public class Maitre extends Thread {
                 + " y querreis menu " + menu);
 
         Asistente_Personal asistentePersonal = new Asistente_Personal();
-        asistentePersonal.seguirAtendiendo(skCliente);
+        asistentePersonal.seguirAtendiendo(skCliente, flujoEntrada, flujoSalida);
 
         //Guardamos en variables toda la bullshit
 
