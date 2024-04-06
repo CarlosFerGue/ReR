@@ -102,7 +102,6 @@ INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E003', 1, TO_DATE('2000
 INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E004', 1, TO_DATE('2000-01-04', 'YYYY-MM-DD'));
 INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E005', 1, TO_DATE('2000-01-05', 'YYYY-MM-DD'));
 INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E006', 1, TO_DATE('2000-01-06', 'YYYY-MM-DD'));
--- Agregando más ejemplares de una misma edición
 INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E001', 2, TO_DATE('2001-02-01', 'YYYY-MM-DD'));
 INSERT INTO ejemplar (id_edicion, numero, alta) VALUES ('E002', 2, TO_DATE('2001-02-02', 'YYYY-MM-DD'));
 
@@ -240,47 +239,40 @@ END;
 
 --Dar alta prestamos
 -------------------------VERSION FUNCTION------------------------------------------------------
+--Pilla bien la id del socio
 
-CREATE OR REPLACE FUNCTION darAltaPrestamo(p_idSocio CHAR, p_idEdicion CHAR)
-    RETURN VARCHAR AS
-    v_codigoSalida CHAR(5);
+
+CREATE OR REPLACE FUNCTION darAltaPrestamo(p_id_socio VARCHAR, p_id_edicion VARCHAR)
+RETURN VARCHAR AS
+    id5 CHAR(5);
     v_idRepetida CHAR(5);
-    v_numeroEdicion NUMBER;
+	v_numeroMasAlto INTEGER;
 BEGIN
-    -- Generar un ID único para el prestamo
-    v_codigoSalida := dbms_random.string('X', 5);
-    SELECT id_socio INTO v_idRepetida FROM socio WHERE id_socio = v_codigoSalida;
+	SELECT MAX(numero) INTO v_numeroMasAlto FROM ejemplar WHERE id_edicion = p_id_edicion;
 
-    WHILE v_idRepetida IS NOT NULL LOOP
-        v_codigoSalida := dbms_random.string('X', 5);
-        SELECT id_socio INTO v_idRepetida FROM socio WHERE id_socio = v_codigoSalida;
-    END LOOP;
+    id5 := dbms_random.string('X', 5);
+	SELECT id_prestamo INTO v_idRepetida FROM prestamo WHERE id_prestamo = id5;
 
-    -- Obtener el número de la última edición
-    BEGIN
-        SELECT MAX(numero) INTO v_numeroEdicion FROM ejemplar WHERE id_edicion = p_idEdicion;
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            -- Manejar la excepción si no se encuentra el número de edición
-            RETURN 'Error: La edición no existe';
-    END;
+	WHILE v_idRepetida IS NOT NULL LOOP
+            id5 := dbms_random.string('X', 5);
+		SELECT id_prestamo INTO v_idRepetida FROM prestamo WHERE id_prestamo = id5;
+	END LOOP;
 
-    -- Insertar el nuevo préstamo
-    INSERT INTO prestamo(id_prestamo, id_socio, id_edicion, numero, inicio)
-    VALUES (v_codigoSalida, p_idSocio, p_idEdicion, v_numeroEdicion, SYSDATE);
-
-    RETURN 'Prestamo dado de alta exitosamente';
-EXCEPTION 
-    WHEN OTHERS THEN
-        RETURN 'Error: Ocurrió una excepción no controlada';
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+		--Aqui como no encuentra un id repetida en el WHILE nos tira a esta excepcion
+    	INSERT INTO prestamo (id_prestamo, id_socio, id_edicion, numero, inicio)
+    	VALUES (id5, p_id_socio, p_id_edicion, v_numeroMasAlto, SYSDATE);
+		RETURN 'Tuvo exito';
+	WHEN OTHERS THEN
+        RETURN 'Error: Ocurrio una excepcion desconocida';
 END;
 /
-
-
+    
 DECLARE
     resultado VARCHAR(100);
 BEGIN
-    resultado := darAltaPrestamo('5K4KC','E001');
+    resultado := darAltaPrestamo('EX1O6','E001');
     DBMS_OUTPUT.PUT_LINE(resultado);
 END;
 /
