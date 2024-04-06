@@ -17,7 +17,7 @@ public class Maitre extends Thread {
         System.out.println("Maitre creado");
     }
 
-    synchronized public void recibirCliente(Socket skCliente) throws IOException {
+    synchronized public void recibirCliente(Socket skCliente) throws IOException, InterruptedException {
         //Para poder leer
         DataInputStream flujoEntrada = new DataInputStream(skCliente.getInputStream());
         //Para poder escribir

@@ -7,6 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.lang.Thread.sleep;
 
 public class Cliente {
     private int id;
@@ -22,7 +26,7 @@ public class Cliente {
 
     }
 
-    public void run() throws IOException {
+    public void run() throws IOException, InterruptedException {
         Socket skCliente = new Socket(HOST, PORT);
         //Para poder leer
         DataInputStream flujoEntrada = new DataInputStream(skCliente.getInputStream());
@@ -53,6 +57,36 @@ public class Cliente {
             flujoSalida.writeUTF(menuArray[r]);
         }
 
+        //Recibimos el que aproveche
+        flujoEntrada.readUTF();
 
+        //Se lo estan comiendo con la calma
+        sleep(4000);
+
+        //Le piden el susto (la cuenta)
+        flujoSalida.writeUTF("Traenos la cuenta por favor.");
+
+
+        //Recibimos la cuenta
+        String mensajeCuenta = flujoEntrada.readUTF();
+
+        //Dividimos el mensaje
+        // Expresión regular para encontrar números en el mensaje
+        Pattern pattern = Pattern.compile("\\d+");
+        Matcher matcher = pattern.matcher(mensajeCuenta);
+
+        int cuenta = 0;
+
+        // Buscar números y asignarlos a las variables correspondientes
+        if (matcher.find()) {
+            cuenta = Integer.parseInt(matcher.group());
+        }
+
+        System.out.println("[CLIENTES]: Han sido: " + cuenta);
+
+        System.out.println("Ya esta pagada jefe.");
+
+        //Le avisamos al asistente de que ya hemos pagado
+        flujoSalida.writeUTF("pago realizado");
     }
 }
