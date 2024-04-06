@@ -1,6 +1,13 @@
 --Errores
 show errors para enseñar errores
 
+--Como conectar sin TRIGGERS
+1.Buscas Iniciar_Oracle en el buscador y lo ejecutas dandole al intro cuando se seleccione
+2.Abres el SQL Plus
+3.En el usuario pones: Sys as sysdba
+4.En la contraseña le das a intro (no tiene)
+Ya debería, y si da algun error se reinicia y ya
+
 --Creamos tablas
 CREATE TABLE obra (
 id CHAR(5),
@@ -130,32 +137,155 @@ CREATE TABLE prestamo(
 );
 
 
+--Dar alta socios
+-------------------------VERSION FUNCTION------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION apertura_prestamo(p_id_socio SOCIO.ID_SOCIO%TYPE, p_id_edicion EJEMPLAR.ID_EDICION%TYPE, p_numero EJEMPLAR.NUMERO%TYPE)
-RETURN INTEGER AS
-    v_codigo INTEGER;  -- Declara una variable local para almacenar el código de resultado.
-    v_id_prestamo prestamo.ID_PRESTAMO%TYPE;  -- Declara una variable local para almacenar el ID de prestamo.
-    e_insert_error EXCEPTION;  -- Declara una excepción personalizada para errores de inserción.
-    PRAGMA EXCEPTION_INIT(e_insert_error, -20001);  -- Asigna un código de error a la excepción personalizada.
+CREATE OR REPLACE FUNCTION darAltaSocio(p_nombre VARCHAR, p_apellidos VARCHAR)
+RETURN VARCHAR AS
+    v_codigoSalida CHAR(5); --Variable que indica el codigo que sale por pantalla
+    id5 CHAR(5);
+    v_idRepetida CHAR(5);
+    v_letras VARCHAR(100); -- Variable para verificar si solo hay letras en el nombre y apellidos
 BEGIN
-    v_id_prestamo := DBMS_RANDOM.STRING('X', 5);  -- Genera un ID de prestamo.
+    -- Verificar si el nombre contiene solo letras
+    IF REGEXP_LIKE(p_nombre, '^[[:alpha:]]+$') THEN
+        -- Verificar si los apellidos contienen solo letras
+        IF REGEXP_LIKE(p_apellidos, '^[[:alpha:]]+$') THEN
+    
+	
+            id5 := dbms_random.string('X', 5);
+            SELECT id_socio INTO v_idRepetida FROM socio WHERE id_socio = id5;
+                
+            WHILE v_idRepetida IS NOT NULL LOOP
+                id5 := dbms_random.string('X', 5);
+                SELECT id_socio INTO v_idRepetida FROM socio WHERE id_socio = id5;
+            END LOOP;
+			
+			
+        ELSE
+            RETURN 'Error: Los apellidos deben contener solo letras';
+        END IF;
+    ELSE
+        RETURN 'Error: El nombre debe contener solo letras';
+    END IF;
 
-    -- Manejo de errores para la inserción.
-    BEGIN
-        INSERT INTO prestamo (ID_PRESTAMO, ID_SOCIO, ID_EDICION, NUMERO, INICIO) 
-        VALUES (v_id_prestamo, p_id_socio, p_id_edicion, p_numero, SYSDATE);
-        v_codigo := 1;  -- Asigna 1 al código de resultado si la inserción es exitosa.
-        DBMS_OUTPUT.PUT_LINE('Se ha prestado el libro correctamente. ID de prestamo: ' || v_id_prestamo);
     EXCEPTION
-        WHEN OTHERS THEN  -- Captura cualquier error durante la inserción.
-            RAISE_APPLICATION_ERROR(-20001, 'Error al insertar en la tabla prestamo: ' || SQLERRM);  -- Lanza un error personalizado.
-    END;
+        WHEN NO_DATA_FOUND THEN
+        	INSERT INTO socio (ID_SOCIO, NOMBRE, APELLIDOS) 
+            VALUES (id5, p_nombre, p_apellidos);
+            v_codigoSalida := id5;
+            COMMIT;
+            RETURN 'Se inserto correctamente ' || id5;
 
-    RETURN v_codigo;  -- Retorna el código de resultado.
-
-EXCEPTION
-    WHEN e_insert_error THEN  -- Captura la excepción personalizada para errores de inserción.
-        v_codigo := -1;  -- Asigna -1 al código de resultado en caso de error de inserción.
-        RETURN v_codigo;  -- Retorna el código de resultado.
+        WHEN OTHERS THEN
+            RETURN 'Error: Ocurrió una excepción no controlada';
 END;
 /
+
+DECLARE
+    resultado VARCHAR(100);
+BEGIN
+    resultado := darAltaSocio('Jas','Pep');
+    DBMS_OUTPUT.PUT_LINE(resultado);
+END;
+/
+
+-------------------------VERSION PROCEDURE------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE darAltaSocioProcedure(p_nombre VARCHAR, p_apellidos VARCHAR)
+AS
+    v_codigoSalida CHAR(5); --Variable que indica el codigo que sale por pantalla
+    id5 CHAR(5);
+    v_idRepetida CHAR(5);
+    v_letras VARCHAR(100); -- Variable para verificar si solo hay letras en el nombre y apellidos
+BEGIN
+    -- Verificar si el nombre contiene solo letras
+    IF REGEXP_LIKE(p_nombre, '^[[:alpha:]]+$') THEN
+        -- Verificar si los apellidos contienen solo letras
+        IF REGEXP_LIKE(p_apellidos, '^[[:alpha:]]+$') THEN
+    
+            id5 := dbms_random.string('X', 5);
+            SELECT id_socio INTO v_idRepetida FROM socio WHERE id_socio = id5;
+                
+            WHILE v_idRepetida IS NOT NULL LOOP
+                id5 := dbms_random.string('X', 5);
+                SELECT id_socio INTO v_idRepetida FROM socio WHERE id_socio = id5;
+            END LOOP;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Error: Los apellidos deben contener solo letras');
+        END IF;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Error: El nombre debe contener solo letras');
+    END IF;
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+        	INSERT INTO socio (ID_SOCIO, NOMBRE, APELLIDOS) 
+            VALUES (id5, p_nombre, p_apellidos);
+            v_codigoSalida := id5;
+            COMMIT;
+           DBMS_OUTPUT.PUT_LINE('Se inserto correctamente ' || id5);
+
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error: Ocurrió una excepción no controlada');
+END;
+/
+
+
+BEGIN
+   darAltaSocioProcedure('Jas','Pep');
+END;
+/
+
+
+--Dar alta prestamos
+-------------------------VERSION FUNCTION------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION darAltaPrestamo(p_idSocio CHAR, p_idEdicion CHAR)
+    RETURN VARCHAR AS
+    v_codigoSalida CHAR(5);
+    v_idRepetida CHAR(5);
+    v_numeroEdicion NUMBER;
+BEGIN
+    -- Generar un ID único para el prestamo
+    v_codigoSalida := dbms_random.string('X', 5);
+    SELECT id_socio INTO v_idRepetida FROM socio WHERE id_socio = v_codigoSalida;
+
+    WHILE v_idRepetida IS NOT NULL LOOP
+        v_codigoSalida := dbms_random.string('X', 5);
+        SELECT id_socio INTO v_idRepetida FROM socio WHERE id_socio = v_codigoSalida;
+    END LOOP;
+
+    -- Obtener el número de la última edición
+    BEGIN
+        SELECT MAX(numero) INTO v_numeroEdicion FROM ejemplar WHERE id_edicion = p_idEdicion;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            -- Manejar la excepción si no se encuentra el número de edición
+            RETURN 'Error: La edición no existe';
+    END;
+
+    -- Insertar el nuevo préstamo
+    INSERT INTO prestamo(id_prestamo, id_socio, id_edicion, numero, inicio)
+    VALUES (v_codigoSalida, p_idSocio, p_idEdicion, v_numeroEdicion, SYSDATE);
+
+    RETURN 'Prestamo dado de alta exitosamente';
+EXCEPTION 
+    WHEN OTHERS THEN
+        RETURN 'Error: Ocurrió una excepción no controlada';
+END;
+/
+
+
+DECLARE
+    resultado VARCHAR(100);
+BEGIN
+    resultado := darAltaPrestamo('5K4KC','E001');
+    DBMS_OUTPUT.PUT_LINE(resultado);
+END;
+/
+
+select * from prestamo;
+
+
+-------------------------VERSION PROCEDURE------------------------------------------------------
