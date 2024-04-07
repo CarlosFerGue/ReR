@@ -393,3 +393,45 @@ BEGIN
 END;
 /
 
+
+--------------------------------CIERRE PRESTAMO----------------------------------------------CREATE OR REPLACE FUNCTION cierreSocio(p_id_prestamo CHAR)
+RETURN VARCHAR AS
+	--Excepciones
+	v_control CHAR(5);
+	v_control_fecha DATE;
+	e_id_no_existe EXCEPTION;
+	e_ya_bajado	EXCEPTION;
+
+BEGIN
+	--Comprobar que existe ese prestamo
+    SELECT COUNT(*) INTO v_control FROM prestamo WHERE id_prestamo = p_id_prestamo;
+	IF v_control != 1 THEN
+        RAISE e_id_no_existe;
+	END IF;
+
+	--Comprobar que no tenga ya una fecha de baja
+	SELECT fin INTO v_control_fecha FROM prestamo WHERE id_prestamo = p_id_prestamo;
+	IF v_control_FECHA IS NOT NULL THEN
+        RAISE e_ya_bajado;
+	END IF;
+	
+EXCEPTION
+	WHEN e_id_no_existe THEN
+    	RETURN 'No se encontro ningun prestamo con ese id';
+	WHEN e_ya_bajado THEN
+        RETURN 'Ya fue dado de baja';
+
+	WHEN OTHERS THEN
+        RETURN 'Error: Ocurrio una excepcion desconocida';
+END;
+/
+    
+DECLARE
+    resultado VARCHAR(100);
+BEGIN
+    resultado := cierreSocio('GSBAE');
+    DBMS_OUTPUT.PUT_LINE(resultado);
+END;
+/
+
+select * from prestamo;
