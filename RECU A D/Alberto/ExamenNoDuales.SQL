@@ -44,6 +44,7 @@ CREATE TABLE estado_envio (
 	idVenta int,
 	CONSTRAINT FK_estado_envio_idVenta FOREIGN KEY (idVenta) REFERENCES VENTA (id)
 );
+
 ALTER TABLE estado_envio
 ADD fecha_recogida DATE;
 
@@ -136,18 +137,23 @@ CREATE OR REPLACE TRIGGER control_borrado_punto_entrega
 BEFORE DELETE ON puntos_entrega
 FOR EACH ROW
 DECLARE
+
 	no_hay_registros EXCEPTION;
 	v_estado VARCHAR(50);
 	productos_siendo_entregados EXCEPTION;
+	
 BEGIN
-	SELECT es.estado INTO v_estado
-	FROM estado_envio es
-			 INNER JOIN venta v ON es.idVenta = v.id
+
+	SELECT es.estado INTO v_estado --Aqui asignamos estado de estado_emvios a v_estado
+	FROM estado_envio es --"es" es el alias para la tabla, para que no sea tan largo escribir su nombre todo el rato
+	INNER JOIN venta v ON es.idVenta = v.id --Union interna entre la tabla ventas con alias "v"
+	--Igualamos el id_Venta de la tabla estado "es" con el de la id de la tabla venta "v"
 	WHERE v.id_punto_entrega = :OLD.id;
 
 	IF v_estado != 'En tránsito' THEN
 			RAISE productos_siendo_entregados;
 	END IF;
+	
 	IF v_estado IS NULL THEN
 			RAISE no_hay_registros;
 	END IF;
