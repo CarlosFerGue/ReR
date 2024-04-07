@@ -726,3 +726,4 @@ select * from PRESTAMO;
 --y daremos error por consola
 
 --Se almacenaran ademas en una tabla llamda puntos_auditados
+

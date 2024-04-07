@@ -96,18 +96,18 @@ DBMS_OUTPUT.PUT_LINE('Punto de entrega entregado correctamente');
 EXCEPTION
     WHEN tabla_no_existente THEN
         DBMS_OUTPUT.PUT_LINE('La tabla puntos_entrega no existe.');
-WHEN ya_existe THEN
-        DBMS_OUTPUT.PUT_LINE('Ya existe un punto de entrega con la misma localización.');
-WHEN nombrePuntoVacio THEN
-        DBMS_OUTPUT.PUT_LINE('El nombre del punto de entrega no puede estar vacío.');
-WHEN localizacionVacia THEN
-        DBMS_OUTPUT.PUT_LINE('La localización del punto de entrega no puede estar vacía.');
-WHEN existenAmbos THEN
-        DBMS_OUTPUT.PUT_LINE('El nombre y la localización ya existen.');
-WHEN ambosVacios THEN
-        DBMS_OUTPUT.PUT_LINE('Tanto el nombre como la localización están vacíos.');
-WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Error al insertar el punto de entrega.');
+	WHEN ya_existe THEN
+			DBMS_OUTPUT.PUT_LINE('Ya existe un punto de entrega con la misma localización.');
+	WHEN nombrePuntoVacio THEN
+			DBMS_OUTPUT.PUT_LINE('El nombre del punto de entrega no puede estar vacío.');
+	WHEN localizacionVacia THEN
+			DBMS_OUTPUT.PUT_LINE('La localización del punto de entrega no puede estar vacía.');
+	WHEN existenAmbos THEN
+			DBMS_OUTPUT.PUT_LINE('El nombre y la localización ya existen.');
+	WHEN ambosVacios THEN
+			DBMS_OUTPUT.PUT_LINE('Tanto el nombre como la localización están vacíos.');
+	WHEN OTHERS THEN
+			DBMS_OUTPUT.PUT_LINE('Error al insertar el punto de entrega.');
 END;
 /
 
@@ -134,23 +134,23 @@ CREATE OR REPLACE TRIGGER control_borrado_punto_entrega
 BEFORE DELETE ON puntos_entrega
 FOR EACH ROW
 DECLARE
-no_hay_registros EXCEPTION;
-    v_estado VARCHAR(50);
-    productos_siendo_entregados EXCEPTION;
+	no_hay_registros EXCEPTION;
+		v_estado VARCHAR(50);
+		productos_siendo_entregados EXCEPTION;
 BEGIN
-SELECT es.estado INTO v_estado
-FROM estado_envio es
-         INNER JOIN venta v ON es.idVenta = v.id
-WHERE v.id_punto_entrega = :OLD.id;
+	SELECT es.estado INTO v_estado
+	FROM estado_envio es
+			 INNER JOIN venta v ON es.idVenta = v.id
+	WHERE v.id_punto_entrega = :OLD.id;
 
-IF v_estado != 'En tránsito' THEN
-        RAISE productos_siendo_entregados;
-END IF;
-IF v_estado IS NULL THEN
-        RAISE no_hay_registros;
-END IF;
-INSERT INTO puntos_entrega_temporal (nombrePunto, localizacion)
-VALUES (:OLD.nombrePunto, :OLD.localizacion);
+	IF v_estado != 'En tránsito' THEN
+			RAISE productos_siendo_entregados;
+	END IF;
+	IF v_estado IS NULL THEN
+			RAISE no_hay_registros;
+	END IF;
+	INSERT INTO puntos_entrega_temporal (nombrePunto, localizacion)
+	VALUES (:OLD.nombrePunto, :OLD.localizacion);
 
 EXCEPTION
     WHEN no_hay_registros THEN
@@ -168,6 +168,8 @@ WHEN OTHERS THEN
 
 END;
 /
+
+
 --Tercer ejercicio
 CREATE OR REPLACE FUNCTION revisar_envios_pendientes(v_id_punto_entrega INT) RETURN VARCHAR2 IS
     -- Definir excepciones personalizadas
