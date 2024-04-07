@@ -496,10 +496,22 @@ select * from prestamo;
 --May God guide the oppressed by the hand of the foolish
 --and throw light upon the ones who walk through the valley of darkness.
 
+--Creacion de tablas
 CREATE TABLE borrado_socios(
-	
+	id_socio_borrado CHAR(5),
+    NOMBRE VARCHAR(30),
+    APELLIDOS VARCHAR(100),
+	fecha_baja DATE,
+	CONSTRAINT pk_id_socio_borrado PRIMARY KEY(id_socio_borrado)
 );
 
 CREATE TABLE borrado_prestamos(
-	
+	id_prestamo_borrado CHAR(5),
+    id_socio CHAR(5),
+    id_edicion CHAR(6),
+    numero INTEGER,
+    inicio DATE,
+    fin DATE,
+	CONSTRAINT pk_id_prestamo_borrado PRIMARY KEY(id_prestamo_borrado)
 );
+
