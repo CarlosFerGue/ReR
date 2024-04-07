@@ -241,29 +241,63 @@ END;
 -------------------------VERSION FUNCTION------------------------------------------------------
 --Pilla bien la id del socio
 
-
 CREATE OR REPLACE FUNCTION darAltaPrestamo(p_id_socio VARCHAR, p_id_edicion VARCHAR)
 RETURN VARCHAR AS
     id5 CHAR(5);
     v_idRepetida CHAR(5);
 	v_numeroMasAlto INTEGER;
+	
+	--Excepciones
+	v_control CHAR(5);
+	e_socioNoExiste EXCEPTION;
+	e_edicionNoExiste EXCEPTION;
 BEGIN
-	SELECT MAX(numero) INTO v_numeroMasAlto FROM ejemplar WHERE id_edicion = p_id_edicion;
+    --Comprobar que socio existe
+	SELECT COUNT(*) INTO v_control FROM socio WHERE id_socio = p_id_socio;
+	IF v_control != 1 THEN
+        RAISE e_socioNoExiste;
+	END IF;
 
+	--Comprobar que la edicion del libro existe
+	SELECT COUNT(*) INTO v_control FROM edicion WHERE id = p_id_edicion;
+	IF v_control IS NULL THEN
+        RAISE e_edicionNoExiste;
+	END IF;
+    
+    --Seleccionamos el ejemplar mas nuevo y lo asignamos a una variable
+	SELECT MAX(numero) 
+    INTO v_numeroMasAlto 
+    FROM ejemplar 
+    WHERE id_edicion = p_id_edicion;
+
+	--Creamos el id 
     id5 := dbms_random.string('X', 5);
 	SELECT id_prestamo INTO v_idRepetida FROM prestamo WHERE id_prestamo = id5;
 
+	--Generamos nuevos id hasta que no sean iguales
 	WHILE v_idRepetida IS NOT NULL LOOP
             id5 := dbms_random.string('X', 5);
 		SELECT id_prestamo INTO v_idRepetida FROM prestamo WHERE id_prestamo = id5;
 	END LOOP;
 
+
 EXCEPTION
-	WHEN NO_DATA_FOUND THEN
+	--Si el socio no existe
+    WHEN e_socioNoExiste THEN
+		ROLLBACK;
+        RETURN 'El socio no existe, o no tiene ese id';
+
+	--Si la edicion no existe
+	WHEN e_edicionNoExiste THEN
+		ROLLBACK;
+        RETURN 'La edicion no existe, o no tiene ese id';
+
+	WHEN NO_DATA_FOUND THEN        
 		--Aqui como no encuentra un id repetida en el WHILE nos tira a esta excepcion
     	INSERT INTO prestamo (id_prestamo, id_socio, id_edicion, numero, inicio)
     	VALUES (id5, p_id_socio, p_id_edicion, v_numeroMasAlto, SYSDATE);
 		RETURN 'Tuvo exito';
+
 	WHEN OTHERS THEN
         RETURN 'Error: Ocurrio una excepcion desconocida';
 END;
@@ -272,12 +306,90 @@ END;
 DECLARE
     resultado VARCHAR(100);
 BEGIN
-    resultado := darAltaPrestamo('EX1O6','E001');
+    resultado := darAltaPrestamo('XZX4T','E007');
     DBMS_OUTPUT.PUT_LINE(resultado);
 END;
 /
+   
 
-select * from prestamo;
+select * from PRESTAMO;
+truncate table prestamo;
 
 
 -------------------------VERSION PROCEDURE------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE darAltaPrestamoProcedure(p_id_socio VARCHAR, p_id_edicion VARCHAR)
+AS
+    id5 CHAR(5);
+    v_idRepetida CHAR(5);
+	v_numeroMasAlto INTEGER;
+	
+	--Excepciones
+	v_control CHAR(5);
+	e_socioNoExiste EXCEPTION;
+	e_edicionNoExiste EXCEPTION;
+	E_NO_HAY_TABLA EXCEPTION;
+    Pragma Exception_Init(e_NO_HAY_TABLA, -6550);
+
+BEGIN
+    --Comprobar que socio existe
+	SELECT COUNT(*) INTO v_control FROM socio WHERE id_socio = p_id_socio;
+	IF v_control != 1 THEN
+        RAISE e_socioNoExiste;
+	END IF;
+
+	--Comprobar id ejemplar
+	SELECT COUNT(*) INTO v_control FROM edicion WHERE id = p_id_edicion;
+	IF v_control != 1 THEN
+        RAISE e_edicionNoExiste;
+	END IF;
+    
+    --Seleccionamos el ejemplar mas nuevo y lo asignamos a una variable
+	SELECT MAX(numero) 
+    INTO v_numeroMasAlto 
+    FROM ejemplar 
+    WHERE id_edicion = p_id_edicion;
+
+	--Creamos el id 
+    id5 := dbms_random.string('X', 5);
+	SELECT id_prestamo INTO v_idRepetida FROM prestamo WHERE id_prestamo = id5;
+
+	--Generamos nuevos id hasta que no sean iguales
+	WHILE v_idRepetida IS NOT NULL LOOP
+            id5 := dbms_random.string('X', 5);
+		SELECT id_prestamo INTO v_idRepetida FROM prestamo WHERE id_prestamo = id5;
+	END LOOP;
+
+
+EXCEPTION
+	--Si el socio no existe
+    WHEN e_socioNoExiste THEN
+		ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('El socio no existe, o no tiene ese id');
+
+	--Si la edicion no existe
+	WHEN e_edicionNoExiste THEN
+		ROLLBACK;
+       DBMS_OUTPUT.PUT_LINE('La edicion no existe, o no tiene ese id');
+
+	WHEN NO_DATA_FOUND THEN        
+		--Aqui como no encuentra un id repetida en el WHILE nos tira a esta excepcion
+    	INSERT INTO prestamo (id_prestamo, id_socio, id_edicion, numero, inicio)
+    	VALUES (id5, p_id_socio, p_id_edicion, v_numeroMasAlto, SYSDATE);
+		DBMS_OUTPUT.PUT_LINE('Tuvo exito');
+	
+	--Si no se encuentra la tabla
+	WHEN E_NO_HAY_TABLA  THEN
+       DBMS_OUTPUT.PUT_LINE('La tabla de socios NO EXISTE');
+
+	WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error: Ocurrio una excepcion desconocida');
+END;
+/
+    
+--Si se ralla el id de edicion es porque tiene 2 espacios detras 'E001  '
+BEGIN
+	darAltaPrestamoProcedure('XZX4T','E001  ');
+END;
+/
+
