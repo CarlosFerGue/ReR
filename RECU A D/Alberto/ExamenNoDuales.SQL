@@ -134,7 +134,7 @@ CREATE TABLE puntos_entrega_temporal(
 );
 
 CREATE OR REPLACE TRIGGER control_borrado_punto_entrega
-BEFORE DELETE ON puntos_entrega
+BEFORE DELETE ON puntos_entrega --se dispara antes de que se borre
 FOR EACH ROW
 DECLARE
 
