@@ -1,0 +1,48 @@
+Ejercicio 1: Uso de Cursores para Reporte de Obras por Autor
+Objetivo: Crear un procedimiento que genere un reporte de todas las obras de un autor específico, utilizando cursores.
+
+Descripción:
+
+El procedimiento debe aceptar el id de un autor como parámetro.
+Utiliza un cursor para seleccionar todas las obras vinculadas a este autor.
+Para cada obra, imprime su título y año de publicación.
+
+----------------------------------------------------------------------------------------------------
+Ejercicio 2: Cursor para Actualizar Stock de Ejemplares
+Objetivo: Escribir un procedimiento que actualice la fecha de alta de todos los ejemplares de una edición específica, utilizando un cursor explícito.
+
+Descripción:
+
+El procedimiento recibe como parámetro el id de una edición.
+Utilizando un cursor, selecciona todos los ejemplares de esa edición.
+Actualiza la fecha de alta de cada ejemplar a la fecha actual.
+
+----------------------------------------------------------------------------------------------------
+Ejercicio 3: Trigger para Auditoría de Autores Borrados
+Objetivo: Crear un trigger que inserte un registro en una tabla de auditoría cada vez que se borra un autor.
+
+Descripción:
+
+La tabla de auditoría (autor_auditoria) debe tener campos para el id del autor, su nombre, apellidos, y la fecha de borrado.
+El trigger se activará después de borrar un autor.
+Inserta en autor_auditoria el id, nombre y apellidos del autor borrado, junto con la fecha actual como fecha de borrado.
+
+----------------------------------------------------------------------------------------------------
+Ejercicio 4: Trigger para Verificar Vínculo Autor-Obra al Insertar
+Objetivo: Desarrollar un trigger que, antes de insertar un nuevo registro en la tabla autor_obra, verifique si tanto el autor como la obra existen.
+
+Descripción:
+
+El trigger se dispara antes de una inserción en la tabla autor_obra.
+Debe verificar si el id_autor existe en la tabla autor y si el id_obra existe en la tabla obra.
+Si alguno no existe, el trigger deberá impedir la inserción y lanzar un error.
+
+----------------------------------------------------------------------------------------------------
+Ejercicio 5: Cursor para Borrado Condicionado de Ejemplares
+Objetivo: Implementar un procedimiento que, utilizando un cursor, borre ejemplares que cumplan ciertas condiciones.
+
+Descripción:
+
+El procedimiento acepta el id de una edición como parámetro.
+Selecciona con un cursor todos los ejemplares de esa edición que no tienen fecha de baja y cuya fecha de alta es mayor a 5 años desde la fecha actual.
+Borra esos ejemplares seleccionados.

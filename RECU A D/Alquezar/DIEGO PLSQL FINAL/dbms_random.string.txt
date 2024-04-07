@@ -1,0 +1,3 @@
+El primer parámetro 'X' indica que la cadena generada debe consistir en caracteres alfanuméricos en mayúsculas. 
+Oracle permite diferentes opciones aquí, como 'U' para caracteres en mayúsculas, 'L' para caracteres en minúsculas, 
+'A' para caracteres alfanuméricos en mayúsculas y minúsculas, y 'X' para caracteres alfanuméricos en mayúsculas.
