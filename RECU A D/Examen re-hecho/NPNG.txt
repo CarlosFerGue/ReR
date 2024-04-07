@@ -715,3 +715,14 @@ END;
 select * from socio;
 select * from EDICION;
 select * from PRESTAMO;
+
+
+--------------------------------------------------------------------------------------------
+----------------------------------EXAMEN NUEVO----------------------------------------------
+--------------------------------------------------------------------------------------------
+
+--Auditado borrados
+--Si hay una entrega que no ha sido recogida dentro del punto, evitamos el borrado
+--y daremos error por consola
+
+--Se almacenaran ademas en una tabla llamda puntos_auditados
