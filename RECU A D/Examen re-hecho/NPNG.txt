@@ -396,7 +396,7 @@ END;
 
 --Cierre prestamo
 --------------------------------VERSION FUNCION----------------------------------------------
-CREATE OR REPLACE FUNCTION cierreSocio(p_id_prestamo CHAR)
+CREATE OR REPLACE FUNCTION cierrePrestamo(p_id_prestamo CHAR)
 RETURN VARCHAR AS
 	--Excepciones
 	v_control CHAR(5);
@@ -437,7 +437,7 @@ END;
 DECLARE
     resultado VARCHAR(100);
 BEGIN
-    resultado := cierreSocio('UM3CZ');
+    resultado := cierrePrestamo('5OGH8');
     DBMS_OUTPUT.PUT_LINE(resultado);
 END;
 /
@@ -491,8 +491,10 @@ END;
 
 select * from prestamo;
 
-
+-------------------------------------------------------------------------------
 ---------------------------------TRIGGERS--------------------------------------
+-------------------------------------------------------------------------------
+
 --May God guide the oppressed by the hand of the foolish
 --and throw light upon the ones who walk through the valley of darkness.
 
@@ -560,6 +562,7 @@ BEGIN
         -- Si el id_socio no existe, insertar los datos del socio borrado en la tabla borrado_socios
         INSERT INTO borrado_socios (id_socio_borrado, nombre, apellidos, fecha_baja)
         VALUES (:OLD.id_socio, :OLD.nombre, :OLD.apellidos, SYSDATE);
+		DBMS_OUTPUT.PUT_LINE('El id_socio ' || :OLD.id_prestamo || ' se inserto en el auditado.');
     END IF;
 
 EXCEPTION
@@ -577,3 +580,138 @@ DELETE FROM SOCIO WHERE ID_SOCIO = 'O01DU';
 
 --Trigger para auditar borrados de socios
 ------------------------------------TRIGGER----------------------------------------------
+CREATE OR REPLACE TRIGGER auditar_borrado_prestamo
+BEFORE DELETE ON prestamo
+FOR EACH ROW
+DECLARE 
+	v_count NUMBER;
+BEGIN
+	--Verificar si el id_prestamo ya esta en la tabla borrado_prestamo
+	SELECT COUNT(*)
+	INTO v_count
+	FROM borrado_prestamos
+	WHERE id_prestamo_borrado = :OLD.id_prestamo;
+
+	IF v_count > 0 THEN
+		DBMS_OUTPUT.PUT_LINE('El id_prestamo ' || :OLD.id_prestamo || ' ya está en la tabla borrado_prestamo.');
+	ELSE
+		INSERT INTO borrado_prestamos (id_prestamo_borrado, id_socio, id_edicion, numero, inicio, fin)
+        VALUES (:OLD.ID_PRESTAMO, :OLD.ID_SOCIO, :OLD.ID_EDICION, :OLD.NUMERO, :OLD.INICIO, :OLD.FIN);
+		DBMS_OUTPUT.PUT_LINE('El id_prestamo ' || :OLD.id_prestamo || ' se inserto en el auditado.');
+	END IF;
+
+EXCEPTION
+	WHEN OTHERS THEN
+	DBMS_OUTPUT.PUT_LINE('Error: Ocurrió una excepción no controlada');
+END;
+/
+
+SELECT * FROM borrado_prestamos;
+
+SELECT * FROM prestamo;
+
+DELETE FROM prestamo WHERE id_prestamo = '8LYGQ';
+
+
+---------------------------------------------------------------------------
+----------------------------CIERRE MEJORADO--------------------------------
+---------------------------------------------------------------------------
+
+CREATE TABLE sanciones(
+	id_sancion CHAR(5),
+	id_prestamo CHAR(5),
+	id_socio CHAR(5),
+	fecha_sancion DATE,
+	tipo_sancion VARCHAR(30),
+	CONSTRAINT pk_id_sancion PRIMARY KEY(id_sancion)
+);
+
+--Maxmio devolver: 7 dias
+--Sancion leve: 14 dias - no puede pedir prestamos 1 semana
+--Sancion grave: 8-30 dias (+ 7) - no pedir libro 30 dias
+--Sancion muy grave: +30 dias (+7) - no pedir libro en 90 dias
+CREATE OR REPLACE FUNCTION cierrePrestamoMejorado(p_id_prestamo CHAR)
+RETURN VARCHAR AS
+    
+    id5 CHAR(5);
+	v_id_socio CHAR(5);
+    v_id_prestamo CHAR(5);
+
+	--Excepciones
+	v_control CHAR(5);
+	v_control_fecha DATE;
+	e_id_no_existe EXCEPTION;
+	e_ya_bajado	EXCEPTION;
+
+    -- Variables para calcular los días transcurridos
+    v_dias_transcurridos NUMBER;
+
+BEGIN
+	id5 := dbms_random.string('X', 5);
+
+	--Cogemos el id_socio y el id_prestamo
+	SELECT id_socio,id_prestamo INTO v_id_socio,v_id_prestamo FROM prestamo WHERE id_prestamo = p_id_prestamo;
+    
+	--Comprobar que existe ese prestamo
+    SELECT COUNT(*) INTO v_control FROM prestamo WHERE id_prestamo = p_id_prestamo;
+	IF v_control != 1 THEN
+        RAISE e_id_no_existe;
+	END IF;
+
+	--Comprobar que no tenga ya una fecha de baja
+	SELECT fin INTO v_control_fecha FROM prestamo WHERE id_prestamo = p_id_prestamo;
+	IF v_control_FECHA IS NOT NULL THEN
+        RAISE e_ya_bajado;
+	END IF;
+
+	 -- Calcular los días transcurridos desde la fecha de inicio del préstamo
+    SELECT SYSDATE - inicio INTO v_dias_transcurridos FROM prestamo WHERE id_prestamo = p_id_prestamo;
+
+	-- Determinar en qué categoría de días cae
+    IF v_dias_transcurridos <= 7 THEN
+        DBMS_OUTPUT.PUT_LINE('Han pasado menos de 7 días desde el inicio del préstamo.');
+    ELSIF v_dias_transcurridos <= 14 THEN
+        DBMS_OUTPUT.PUT_LINE('Han pasado entre 7 y 14 días desde el inicio del préstamo.');
+		INSERT INTO sanciones VALUES(
+            id5, v_id_prestamo, v_id_socio, SYSDATE, 'Leve'
+        );
+    ELSIF v_dias_transcurridos <= 37 THEN
+        DBMS_OUTPUT.PUT_LINE('Han pasado entre 15 y 37 días desde el inicio del préstamo.');
+		INSERT INTO sanciones VALUES (
+            id5, v_id_prestamo, v_id_socio, SYSDATE, 'Grave'
+        );
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Han pasado más de 37 días desde el inicio del préstamo.');
+		INSERT INTO sanciones VALUES(
+            id5, v_id_prestamo, v_id_socio, SYSDATE, 'Muy grave'
+        );
+    END IF;
+
+	--Si no salta ninguna excepcion lo introducimos
+	UPDATE prestamo
+    SET fin = SYSDATE
+    WHERE id_prestamo = p_id_prestamo; 
+	RETURN 'Se introdujo el cierre del prestamo con exito';
+
+EXCEPTION
+	WHEN e_id_no_existe THEN
+    	RETURN 'No se encontro ningun prestamo con ese id';
+	WHEN e_ya_bajado THEN
+        RETURN 'Ya fue dado de baja';
+
+	WHEN OTHERS THEN
+        RETURN 'Error: Ocurrio una excepcion desconocida';
+END;
+/
+    
+DECLARE
+    resultado VARCHAR(100);
+BEGIN
+    resultado := cierrePrestamoMejorado('RIWIJ');
+    DBMS_OUTPUT.PUT_LINE(resultado);
+END;
+/
+
+select * from socio;
+select * from EDICION;
+select * from PRESTAMO;
