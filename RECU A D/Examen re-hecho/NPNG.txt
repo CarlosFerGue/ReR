@@ -394,7 +394,9 @@ END;
 /
 
 
---------------------------------CIERRE PRESTAMO----------------------------------------------CREATE OR REPLACE FUNCTION cierreSocio(p_id_prestamo CHAR)
+--Cierre prestamo
+--------------------------------VERSION FUNCION----------------------------------------------
+CREATE OR REPLACE FUNCTION cierreSocio(p_id_prestamo CHAR)
 RETURN VARCHAR AS
 	--Excepciones
 	v_control CHAR(5);
@@ -414,7 +416,13 @@ BEGIN
 	IF v_control_FECHA IS NOT NULL THEN
         RAISE e_ya_bajado;
 	END IF;
-	
+
+	--Si no salta ninguna excepcion lo introducimos
+	UPDATE prestamo
+    SET fin = SYSDATE
+    WHERE id_prestamo = p_id_prestamo; 
+	RETURN 'Se introdujo el cierre del prestamo con exito';
+
 EXCEPTION
 	WHEN e_id_no_existe THEN
     	RETURN 'No se encontro ningun prestamo con ese id';
@@ -429,9 +437,69 @@ END;
 DECLARE
     resultado VARCHAR(100);
 BEGIN
-    resultado := cierreSocio('GSBAE');
+    resultado := cierreSocio('UM3CZ');
     DBMS_OUTPUT.PUT_LINE(resultado);
 END;
 /
 
 select * from prestamo;
+
+--------------------------------VERSION PROCEDURE----------------------------------------------
+CREATE OR REPLACE PROCEDURE cierreSocioProcedure(p_id_prestamo CHAR)
+AS
+	--Excepciones
+	v_control CHAR(5);
+	v_control_fecha DATE;
+	e_id_no_existe EXCEPTION;
+	e_ya_bajado	EXCEPTION;
+
+BEGIN
+	--Comprobar que existe ese prestamo
+    SELECT COUNT(*) INTO v_control FROM prestamo WHERE id_prestamo = p_id_prestamo;
+	IF v_control != 1 THEN
+        RAISE e_id_no_existe;
+	END IF;
+
+	--Comprobar que no tenga ya una fecha de baja
+	SELECT fin INTO v_control_fecha FROM prestamo WHERE id_prestamo = p_id_prestamo;
+	IF v_control_FECHA IS NOT NULL THEN
+        RAISE e_ya_bajado;
+	END IF;
+
+	--Si no salta ninguna excepcion lo introducimos
+	UPDATE prestamo
+    SET fin = SYSDATE
+    WHERE id_prestamo = p_id_prestamo; 
+	DBMS_OUTPUT.PUT_LINE('Se introdujo el cierre del prestamo con exito');
+
+EXCEPTION
+	WHEN e_id_no_existe THEN
+    	DBMS_OUTPUT.PUT_LINE('No se encontro ningun prestamo con ese id');
+	WHEN e_ya_bajado THEN
+        DBMS_OUTPUT.PUT_LINE('Ya fue dado de baja');
+
+	WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error: Ocurrio una excepcion desconocida');
+END;
+/
+    
+
+BEGIN
+	cierreSocioProcedure('5MJH1');
+END;
+/
+
+select * from prestamo;
+
+
+---------------------------------TRIGGERS--------------------------------------
+--May God guide the oppressed by the hand of the foolish
+--and throw light upon the ones who walk through the valley of darkness.
+
+CREATE TABLE borrado_socios(
+	
+);
+
+CREATE TABLE borrado_prestamos(
+	
+);
