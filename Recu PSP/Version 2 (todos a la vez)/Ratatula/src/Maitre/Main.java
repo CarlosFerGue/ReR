@@ -49,7 +49,8 @@ public class Main {
             }
         }*/
 
-        int timeout = 20;
+        //Tienes que runearlo antes de 8 segundos
+        int timeout = 8;
 
         try {
             ServerSocket serverSocket = new ServerSocket(5000);
