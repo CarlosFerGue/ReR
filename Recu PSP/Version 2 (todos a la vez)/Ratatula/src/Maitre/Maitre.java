@@ -16,7 +16,7 @@ public class Maitre extends Thread {
         System.out.println("Maitre creado");
     }
 
-     public int recibirCliente(Socket skCliente) throws IOException, InterruptedException {
+    public void recibirCliente(Socket skCliente) throws IOException, InterruptedException {
         int mesa_libre;
 
         //Para poder leer
@@ -42,16 +42,11 @@ public class Maitre extends Thread {
             menu = Integer.parseInt(matcher.group());
         }
 
-            System.out.println("[MAITRE]: Genial, hueco para " + personas
+        System.out.println("[MAITRE]: Genial, hueco para " + personas
                 + " y querreis menu " + menu);
 
         Asistente_Personal asistentePersonal = new Asistente_Personal();
         asistentePersonal.seguirAtendiendo(skCliente, flujoEntrada, flujoSalida);
 
-        mesa_libre = 1;
-        return mesa_libre;
-
     }
-
-
 }
