@@ -5,7 +5,6 @@ import Asistente_personal.Asistente_Personal;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,7 +16,9 @@ public class Maitre extends Thread {
         System.out.println("Maitre creado");
     }
 
-    synchronized public void recibirCliente(Socket skCliente) throws IOException, InterruptedException {
+     public int recibirCliente(Socket skCliente) throws IOException, InterruptedException {
+        int mesa_libre;
+
         //Para poder leer
         DataInputStream flujoEntrada = new DataInputStream(skCliente.getInputStream());
         //Para poder escribir
@@ -47,10 +48,8 @@ public class Maitre extends Thread {
         Asistente_Personal asistentePersonal = new Asistente_Personal();
         asistentePersonal.seguirAtendiendo(skCliente, flujoEntrada, flujoSalida);
 
-        //Guardamos en variables toda la bullshit
-
-        //Acaban de rolear
-        //skCliente es el papel donde escriben
+        mesa_libre = 1;
+        return mesa_libre;
 
     }
 
